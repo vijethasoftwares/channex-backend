@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testing Booking.</title>
+</head>
+
+<body>
+    <h1>Book Your Room!</h1>
+    <hr />
+
+    <div style="display:inline-block">
+        <img src="https://cdn.pixabay.com/photo/2014/04/03/10/55/t-shirt-311732_960_720.png" alt="" width="100px"
+            height="100px">
+        <p>Room 1</p>
+        <p><b>Amount:- Rs. 800</b></p>
+        <button onclick="createPayment('Room1', 800)">Pay Now</button>
+    </div>
+
+    <div style="display:inline-block">
+        <img src="https://cdn.pixabay.com/photo/2013/07/12/18/20/shoes-153310_960_720.png" alt="" width="100px"
+            height="100px">
+        <p>Room 2</p>
+        <p><b>Amount:- Rs. 100</b></p>
+        <button onclick="createPayment('Room2', 100)">Pay Now</button>
+    </div>
+
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+        // Function to capture payment after a successful payment
+        async function capturePayment(paymentId, paymentAmount, userId, roomId) {
+            console.log("Im here! to capture payment")
+            try {
+                // Send a request to your backend to capture the payment
+                const response = await fetch('http://localhost:3000/api/manager/capture-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTUwYjY0NjQwZDIyNDlhZmVhZTM4ODEiLCJpYXQiOjE2OTk4NjU1NDMsImV4cCI6MTY5OTg3OTk0M30.p5h0yba7jkjQ1E5qKOcGYth6s3Z0b5ELjR1ZB4HE03g',
+                    },
+                    body: JSON.stringify({
+                        paymentId: paymentId,
+                        paymentAmount: paymentAmount,
+                        userId: userId,
+                        roomId: roomId,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(data.message);
+                } else {
+                    alert('Payment capture failed');
+                }
+            } catch (error) {
+                console.error('Error capturing payment:', error);
+                alert('Error capturing payment');
+            }
+        }
+
+        async function createPayment(roomName, amount) {
+            console.log("Im here!")
+            try {
+                // Send a request to your backend to create a payment
+                const response = await fetch('http://localhost:3000/api/manager/create-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NTUwYjY0NjQwZDIyNDlhZmVhZTM4ODEiLCJpYXQiOjE2OTk4NjU1NDMsImV4cCI6MTY5OTg3OTk0M30.p5h0yba7jkjQ1E5qKOcGYth6s3Z0b5ELjR1ZB4HE03g'
+                    },
+                    body: JSON.stringify({
+                        amount: amount,
+                        userId: '6550b64640d2249afeae3881',
+                        roomId: '655104a75839655b343c2212',
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Initialize Razorpay with the response data
+                    const options = {
+                        key: data.payment.key_id,
+                        amount: data.payment.paymentAmount,
+                        currency: 'INR',
+                        name: roomName,
+                        description: data.payment.roomDescription,
+                        image: 'https://placehold.co/500x500',
+                        order_id: data.payment.orderId,
+                        prefill: {
+                            contact: data.payment.userContact,
+                            name: data.payment.userName,
+                            email: data.payment.userEmail,
+                        },
+                        notes: {
+                            description: data.payment.roomDescription,
+                        },
+                        handler: function (response) {
+                            capturePayment(response.razorpay_payment_id, response.amount, '6550b64640d2249afeae3881', '655104a75839655b343c2212');
+                            alert(response.razorpay_payment_id);
+                            alert(response.razorpay_order_id);
+                            alert(response.razorpay_signature);
+                        },
+                        theme: {
+                            color: '#2300a3',
+                        },
+                    };
+
+                    const razorpayObject = new Razorpay(options);
+                    razorpayObject.on('payment.failed', function (response) {
+                        console.log(response);
+                        alert('Payment Failed');
+                    });
+
+                    razorpayObject.open();
+
+                } else {
+                    alert('Payment creation failed');
+                }
+            } catch (error) {
+                console.error('Error creating payment:', error);
+                alert('Error creating payment');
+            }
+        }
+    </script>
+</body>
+
+</html>
