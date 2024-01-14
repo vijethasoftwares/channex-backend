@@ -33,11 +33,9 @@ const propertySchema = new mongoose.Schema({
     },
   },
   location: {
-    type: [
-      {
-        type: String,
-      },
-    ],
+    type: {
+      type: String,
+    },
   },
   nearbyPlaces: {
     type: [
@@ -46,7 +44,13 @@ const propertySchema = new mongoose.Schema({
       },
     ],
   },
-  permissions: {},
+  permissions: {
+    type: [
+      {
+        type: String,
+      },
+    ],
+  },
   manager: {
     name: {
       type: String,
