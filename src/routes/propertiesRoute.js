@@ -3,6 +3,7 @@ const router = express.Router();
 const Property = require("../models/Property");
 const User = require("../models/User");
 const authenticateToken = require("../middleware/authMiddleware");
+const UserRoles = require("../config/consts");
 
 // Create a new property
 router.post("/create-properties", authenticateToken, async (req, res) => {
@@ -35,10 +36,7 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
     }
 
     // Check if the user has the role of "owner" in the database
-    const userWithRoleOwner = await User.findOne({
-      _id: userId,
-      role: "Owner",
-    });
+    const userWithRoleOwner = req.user.role === UserRoles.OWNER;
     if (!userWithRoleOwner) {
       return res
         .status(403)
@@ -79,17 +77,49 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
 });
 
 // Get all properties
-router.get("/get-all-properties", async (req, res) => {
+router.get("/get-all-properties", authenticateToken, async (req, res) => {
+  // Check if the user is authenticated and has a valid token
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. User not authenticated." });
+  }
+
+  // Check if the user has the role of "owner" in the database
+  const userWithRoleOwner =
+    req.user.role === UserRoles.OWNER ||
+    req.user.role === UserRoles.ACCOUNTANT ||
+    req.user.role === UserRoles.SALESMANAGER;
+  if (!userWithRoleOwner) {
+    return res
+      .status(403)
+      .json({ message: "Access denied. Only owners can create properties." });
+  }
   try {
     const properties = await Property.find();
-    return res.status(200).json({ properties });
+    return res
+      .status(200)
+      .json({ message: "fetched properties successfully", properties });
   } catch (error) {
     console.error("Error getting properties:", error);
     return res.status(500).json({ message: "Failed to retrieve properties." });
   }
 });
 
-router.get("/delete-all-properties", async (req, res) => {
+router.get("/delete-all-properties", authenticateToken, async (req, res) => {
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. User not authenticated." });
+  }
+
+  // Check if the user has the role of "owner" in the database
+  const userWithRoleOwner = req.user.role === UserRoles.OWNER;
+  if (!userWithRoleOwner) {
+    return res
+      .status(403)
+      .json({ message: "Access denied. Only owners can create properties." });
+  }
   try {
     const properties = await Property.deleteMany();
     return res.status(200).json({ properties });
@@ -104,8 +134,8 @@ router.get("/get-my-properties", authenticateToken, async (req, res) => {
     return res.status(500).json({ message: "Failed to retrieve properties." });
   }
   try {
-    const userWithRoleManager = req.user.role == "Manager" ? true : false;
-    const userWithRoleOwner = req.user.role == "Owner" ? true : false;
+    const userWithRoleManager = req.user.role === UserRoles.MANAGER;
+    const userWithRoleOwner = req.user.role === UserRoles.OWNER;
     if (userWithRoleManager) {
       const properties = await Property.find({ managerId: req.user._id });
       return res.status(200).json({ properties });
