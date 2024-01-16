@@ -20,6 +20,7 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
       size,
       isFeatured,
       description,
+      managerId,
       nearbyPlaces,
       facilities,
       foodMenu,
@@ -54,6 +55,7 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
       contactInfo,
       size,
       isFeatured,
+      managerId,
       nearbyPlaces,
       description,
       facilities,
@@ -268,11 +270,10 @@ router.delete("/delete-property/:id", authenticateToken, async (req, res) => {
       return res.status(404).json({ message: "Property not found." });
     }
 
-    const hasRooms = Room.find({ propertyId: id });
+    const hasRooms = Room.findOne({ propertyId: id });
     if (hasRooms) {
-      return res.status(403).json({
-        message: "Access denied. Property has rooms.",
-        // "Access denied. You are not authorized to delete this property.",
+      return res.status(404).json({
+        message: "Property has rooms. Please delete rooms first.",
       });
     }
 

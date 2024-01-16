@@ -4,6 +4,7 @@ const unirest = require("unirest");
 const authenticateToken = require("../middleware/authMiddleware");
 const User = require("../models/User");
 const transporter = require("../config/nodemailer");
+const UserRoles = require("../config/consts");
 
 // Protected admin route
 router.get("/dashboard", authenticateToken, (req, res) => {
@@ -31,15 +32,22 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
   }
   // Check if the user has the role of "owner" in the database
   try {
-    const { name, phoneNumber, email, userId } = req.body;
-    const userWithRoleOwner = await User.findOne({
-      _id: userId,
-      role: "Owner",
-    });
+    const { name, phoneNumber, email } = req.body;
+    const userWithRoleOwner =
+      req.user.role === UserRoles.OWNER || req.user.role === UserRoles.ADMIN;
     if (!userWithRoleOwner) {
+      return res.status(403).json({
+        message: "Access denied. Only owners amd admin can create managers.",
+      });
+    }
+    const existingUser = await User.findOne({
+      $or: [{ email: email }, { phoneNumber: phoneNumber }],
+    }).exec();
+    console.log("existingUser", existingUser);
+    if (existingUser) {
       return res
-        .status(403)
-        .json({ message: "Access denied. Only owners can create properties." });
+        .status(200)
+        .json({ message: "Manager already exist", data: existingUser });
     }
     // Check if the email is already registered
     // Create a new user
@@ -47,6 +55,7 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
       name,
       phoneNumber,
       email,
+      createdBy: req.user._id,
     });
 
     await newUser.save();
@@ -58,7 +67,7 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
       from: `${process.env.SENDER_EMAIL}`,
       to: newUser.email,
       subject: "Credentials for your account",
-      text: `phoneNumber for logging in: ${phoneNumber}, email for logging in: ${email} and password for logging in: ${password}`,
+      text: `phoneNumber for logging in: ${phoneNumber}, email for logging in: ${email}`,
     };
 
     transporter.sendMail(mailOptions, (error, info) => {
@@ -80,7 +89,7 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
     req.query({
       authorization:
         "iI8bS2F1AnfoKHxpROrdel5VWBuNt6hLE0YsXwTmZJgqzj79yviVaRU1cXut8smbg0GLpKhrSfNxqvZD",
-      message: `phoneNumber for logging in: ${phoneNumber}, email for logging in: ${email} and password for logging in: ${password}`,
+      message: `phoneNumber for logging in: ${phoneNumber}, email for logging in: ${email}`,
       language: "english",
       route: "q",
       numbers: `${phoneNumber}`,
@@ -90,18 +99,23 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
       "cache-control": "no-cache",
     });
 
-    req.end(function (res) {
-      if (res.error) throw new Error(res.error);
-
-      console.log(res.body);
+    return res.status(201).json({
+      message: "User registered. Verification email sent.",
+      data: newUser,
     });
+
+    // req.end(function (res) {
+    //   if (res.error) throw new Error(res.error);
+
+    //   console.log(res.body);
+    // });
   } catch (error) {
     console.error("Error registering user:", error);
     return res.status(500).json({ message: "Registration failed." });
   }
   // Save the property to the database
 
-  res.status(200).json({ message: "Welcome to the admin dashboard." });
+  // res.status(200).json({ message: "Welcome to the admin dashboard." });
 });
 
 module.exports = router;

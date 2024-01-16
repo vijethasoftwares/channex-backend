@@ -6,11 +6,11 @@ const userSchema = new mongoose.Schema({
   username: {
     type: String,
     required: false,
-    unique: true,
-    index: {
-      unique: true,
-      partialFilterExpression: { email: { $type: "string" } },
-    },
+    // unique: true,
+    // index: {
+    //   unique: true,
+    //   partialFilterExpression: { email: { $type: "string" } },
+    // },
   },
   name: {
     type: String,
@@ -36,10 +36,7 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: false,
-    index: {
-      unique: true,
-      partialFilterExpression: { email: { $type: "string" } },
-    },
+    unique: true,
   },
   phoneNumber: {
     type: String,
