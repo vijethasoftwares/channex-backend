@@ -5,6 +5,7 @@ const User = require("../models/User");
 const authenticateToken = require("../middleware/authMiddleware");
 const Razorpay = require("razorpay");
 const { slotFound } = require("../utils/findSlot");
+const UserRoles = require("../config/consts");
 
 const razorpay = new Razorpay({
   key_id: `${process.env.RAZORPAY_ID}`,
@@ -228,7 +229,7 @@ router.get("/get-room-reviews/:roomId", async (req, res) => {
   }
 });
 
-router.get("/deleteAllRooms", async (req, res) => {
+router.delete("/deleteAllRooms", async (req, res) => {
   try {
     // delete all rooms
     const room = await Room.deleteMany();
@@ -438,35 +439,33 @@ router.put("/update-room/:roomId", authenticateToken, async (req, res) => {
 });
 
 // Delete room by ID
-router.delete("/delete-room/:roomId", authenticateToken, async (req, res) => {
+router.delete("/delete-room/:id", authenticateToken, async (req, res) => {
+  // Check if the user is authenticated and has a valid token
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. User not authenticated." });
+  }
+  // Check if the user has the role of "Manager" in the database
+  const userWithRoleManager = req.user.role === UserRoles.MANAGER;
+  const userWithRoleOwner = req.user.role == UserRoles.OWNER;
+  if (!userWithRoleManager && !userWithRoleOwner) {
+    return res.status(403).json({
+      message: "Access denied. Only Managers and Owners can delete rooms.",
+    });
+  }
+
   try {
-    const { roomId } = req.params;
-
-    // Check if the user is authenticated and has a valid token
-    if (!req.user) {
-      return res
-        .status(401)
-        .json({ message: "Access denied. User not authenticated." });
-    }
-
+    const { id } = req.params;
     // Find the room by its ID
-    const room = await Room.findById(roomId);
+    const room = await Room.findById(id);
 
     if (!room) {
       return res.status(404).json({ message: "Room not found." });
     }
 
-    // Check if the user has the role of "Manager" in the database
-    const userWithRoleManager = req.user.role == "Manager" ? true : false;
-    const userWithRoleOwner = req.user.role == "Owner" ? true : false;
-    if (userWithRoleManager || !userWithRoleOwner) {
-      return res.status(403).json({
-        message: "Access denied. Only Managers can create properties.",
-      });
-    }
-
     // Delete the room from the database
-    await Room.deleteOne({ _id: roomId });
+    await Room.deleteOne({ _id: id });
 
     return res.status(200).json({ message: "Room deleted successfully." });
   } catch (error) {

@@ -4,6 +4,7 @@ const Property = require("../models/Property");
 const User = require("../models/User");
 const authenticateToken = require("../middleware/authMiddleware");
 const UserRoles = require("../config/consts");
+const Room = require("../models/Rooms");
 
 // Create a new property
 router.post("/create-properties", authenticateToken, async (req, res) => {
@@ -244,52 +245,48 @@ router.put(
 );
 
 // Delete property by ID
-router.delete(
-  "/delete-property-by-id/:propertyId",
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const { propertyId } = req.params;
-
-      // Check if the user is authenticated and has a valid token
-      if (!req.user) {
-        return res
-          .status(401)
-          .json({ message: "Access denied. User not authenticated." });
-      }
-
-      // Find the property by its ID
-      const property = await Property.findById(propertyId);
-
-      if (!property) {
-        return res.status(404).json({ message: "Property not found." });
-      }
-
-      // Check if the user is the owner of the property or has the role of 'admin'
-      if (
-        property.owner_user_id.toString() !== req.user._id.toString() &&
-        req.user.role !== "admin"
-      ) {
-        return res.status(403).json({
-          message:
-            "Access denied. You are not authorized to delete this property.",
-        });
-      }
-
-      // Delete the property from the database
-      await Property.deleteOne({ _id: propertyId });
-
-      return res
-        .status(200)
-        .json({ message: "Property deleted successfully." });
-    } catch (error) {
-      console.error("Error deleting property by ID:", error);
-      return res
-        .status(500)
-        .json({ message: "Failed to delete property by ID." });
-    }
+router.delete("/delete-property/:id", authenticateToken, async (req, res) => {
+  // Check if the user is authenticated and has a valid token
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. User not authenticated." });
   }
-);
+  const userWithRoleOwner = req.user.role == UserRoles.OWNER;
+  if (!userWithRoleOwner) {
+    return res.status(403).json({
+      message: "Access denied. Only Owners can delete properties.",
+      // "Access denied. You are not authorized to delete this property.",
+    });
+  }
+  try {
+    const { id } = req.params;
+
+    // Find the property by its ID
+    const property = await Property.findById(id);
+    if (!property) {
+      return res.status(404).json({ message: "Property not found." });
+    }
+
+    const hasRooms = Room.find({ propertyId: id });
+    if (hasRooms) {
+      return res.status(403).json({
+        message: "Access denied. Property has rooms.",
+        // "Access denied. You are not authorized to delete this property.",
+      });
+    }
+
+    // Delete the property from the database
+    await Property.deleteOne({ _id: id });
+
+    return res.status(200).json({ message: "Property deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting property by ID:", error);
+    return res
+      .status(500)
+      .json({ message: "Failed to delete property by ID." });
+  }
+});
 
 // Get properties by owner_user_id
 router.get(
