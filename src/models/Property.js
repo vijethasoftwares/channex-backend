@@ -24,13 +24,8 @@ const propertySchema = new mongoose.Schema({
     default: new ObjectId(),
   },
   coOfLocation: {
-    type: {
-      type: String,
-      default: "Point",
-    },
-    coordinates: {
-      type: [Number],
-    },
+    type: { type: String, default: "Point" },
+    coordinates: { type: [Number], index: "2dsphere" },
   },
   location: {
     type: {
