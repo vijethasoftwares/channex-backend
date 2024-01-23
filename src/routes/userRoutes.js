@@ -37,17 +37,18 @@ router.post("/create-booking", async (req, res) => {
   } = req.body;
 
   try {
-    const rooms = await Room.find({ propertyId, roomType });
+    const rooms = await Room.find({ propertyId, roomType, roomCategory });
 
     if (!rooms.length) {
       return res.status(400).json({
-        message: "No rooms available of the requested type.",
+        message: `No ${roomCategory} ${roomType} rooms available on the selected property.`,
       });
     }
 
     const bookings = await Booking.find({
       propertyId,
       roomType,
+      roomCategory,
       from: { $lte: new Date(to) },
       to: { $gte: new Date(from) },
     });
@@ -75,7 +76,31 @@ router.post("/create-booking", async (req, res) => {
     console.log(totalGuests, "totalGuests");
     console.log(numberOfGuest, "number of guest");
 
+    // 2 triple rooms having 5 vacancy for 4 guests
+    // room 1 - 2 vacancy - 4 guests - 2 guests
+    // room 2 - 3 vacancy - 2 guests - 0 guests
+    const roomsWithVacancy = rooms.filter((room) => room.vacancy > 0);
+    let nog = numberOfGuest;
+
     if (roomsSize >= totalGuests + numberOfGuest) {
+      const updatedVacancy = await Promise.all(
+        roomsWithVacancy.map((room) => {
+          if (nog <= 0) {
+            return Promise.resolve(room);
+          }
+
+          const guestsToAssign = Math.min(nog, room.vacancy);
+          nog -= guestsToAssign;
+          const newVacancy = room.vacancy - guestsToAssign;
+
+          return Room.findByIdAndUpdate(
+            room._id,
+            { vacancy: newVacancy },
+            { new: true }
+          );
+        })
+      );
+      console.log(updatedVacancy, "updatedVacancy");
       const newBooking = new Booking({
         paymentStatus,
         paymentAmount,

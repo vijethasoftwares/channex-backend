@@ -65,6 +65,11 @@ const roomSchema = new mongoose.Schema({
     ref: "Property",
     required: true,
   },
+  propertyType: {
+    type: String,
+    enum: ["Hostel/PG", "Hotel", "Family Apartment"],
+    required: true,
+  },
   images: {
     bedImage: {
       type: [

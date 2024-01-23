@@ -55,7 +55,7 @@ const propertySchema = new mongoose.Schema({
     name: {
       type: String,
     },
-    phone: {
+    phoneNumber: {
       type: String,
     },
     email: {
@@ -63,6 +63,14 @@ const propertySchema = new mongoose.Schema({
     },
   },
   isFeatured: {
+    type: Boolean,
+    default: false,
+  },
+  isParkingSpaceAvailable: {
+    type: Boolean,
+    default: false,
+  },
+  isCoupleFriendly: {
     type: Boolean,
     default: false,
   },

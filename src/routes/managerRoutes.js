@@ -9,6 +9,7 @@ const Booking = require("../models/Booking");
 const Room = require("../models/Rooms");
 const findSlot = require("../utils/findSlot");
 const { ObjectId } = require("mongodb");
+const UserRoles = require("../config/consts");
 
 router.get(
   "/getAllBookings/:propertyId",
@@ -70,7 +71,7 @@ router.get("/get-booking/:id", authenticateToken, async (req, res) => {
     // Extract payment capture details from the request
     // Find the room by its ID
     const userHasAccess =
-      req.user.role == "Owner" || req.user.role == "Manager";
+      req.user.role === UserRoles.OWNER || req.user.role === UserRoles.MANAGER;
     if (!userHasAccess) {
       return res.status(403).json({
         message: "Access denied. Only owners and managers can view bookings.",
@@ -146,6 +147,74 @@ router.patch(
     }
   }
 );
+
+router.patch("/update-booking/:id", authenticateToken, async (req, res) => {
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. User not authenticated." });
+  }
+  const userHasAccess = req.user.role == "Owner" || req.user.role == "Manager";
+  if (!userHasAccess) {
+    return res.status(403).json({
+      message: "Access denied. Only owners and managers can view bookings.",
+    });
+  }
+
+  const payload = req.body;
+
+  try {
+    const rooms = await Room.find({
+      propertyId: payload.propertyId,
+      roomType: payload.roomType,
+    });
+
+    if (!rooms.length) {
+      return res.status(400).json({
+        message: `No ${payload?.roomCategory} ${payload?.roomType} rooms available on the selected property.`,
+      });
+    }
+    const roomsSize = rooms.reduce((total, room) => total + room.vacancy, 0);
+
+    const bookings = await Booking.find({
+      propertyId: payload.propertyId,
+      roomType: payload.roomType,
+      from: { $lte: new Date(payload.to) },
+      to: { $gte: new Date(payload.from) },
+    });
+
+    const overlappingBookings = bookings.filter((booking) => {
+      const bookingFrom = new Date(booking.from);
+      const bookingTo = new Date(booking.to);
+      const requestedFrom = new Date(payload.from);
+      const requestedTo = new Date(payload.to);
+
+      return bookingFrom < requestedTo && bookingTo > requestedFrom;
+    });
+
+    const totalGuests = overlappingBookings.reduce(
+      (total, booking) => total + booking.numberOfGuest,
+      0
+    );
+
+    if (roomsSize >= totalGuests) {
+      const updatedBooking = await Booking.updateOne(
+        { _id: req.params.id },
+        payload
+      );
+      return res.status(201).json({
+        message: "Booking updated successfully.",
+      });
+    } else {
+      return res.status(400).json({
+        message: "Not enough rooms available.",
+      });
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ message: "Failed to update booking" });
+  }
+});
 
 router.patch(
   "/update-booking/check-out/:id",

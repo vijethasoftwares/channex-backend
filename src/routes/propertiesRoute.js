@@ -20,6 +20,8 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
       size,
       isFeatured,
       description,
+      isCoupleFriendly,
+      isParkingSpaceAvailable,
       managerId,
       nearbyPlaces,
       facilities,
@@ -56,6 +58,8 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
       size,
       isFeatured,
       managerId,
+      isCoupleFriendly,
+      isParkingSpaceAvailable,
       nearbyPlaces,
       description,
       facilities,
@@ -177,74 +181,47 @@ router.get("/get-property-by-id/:propertyId", async (req, res) => {
 });
 
 // Update property details by ID
-router.put(
-  "/update-property-by-id/:propertyId",
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const { propertyId } = req.params;
-
-      // Check if the user is authenticated and has a valid token
-      if (!req.user) {
-        return res
-          .status(401)
-          .json({ message: "Access denied. User not authenticated." });
-      }
-
-      // Find the property by its ID
-      const property = await Property.findById(propertyId);
-
-      if (!property) {
-        return res.status(404).json({ message: "Property not found." });
-      }
-
-      // Check if the user is the owner of the property
-      if (property.owner_user_id.toString() !== req.user._id.toString()) {
-        return res.status(403).json({
-          message: "Access denied. You are not the owner of this property.",
-        });
-      }
-
-      // Extract updated property details from the request body
-      const {
-        name,
-        address,
-        location,
-        contactInfo,
-        size,
-        isFeatured,
-        description,
-        extraFacilities,
-        status,
-        images,
-      } = req.body;
-
-      // Update the property details that are provided in the request body
-      if (name) property.name = name;
-      if (address) property.address = address;
-      if (location) property.location = location;
-      if (contactInfo) property.contactInfo = contactInfo;
-      if (size) property.size = size;
-      if (isFeatured !== undefined) property.isFeatured = isFeatured;
-      if (description) property.description = description;
-      if (extraFacilities) property.extraFacilities = extraFacilities;
-      if (status) property.status = status;
-      if (images) property.images = images;
-
-      // Save the updated property to the database
-      await property.save();
-
-      return res
-        .status(200)
-        .json({ message: "Property updated successfully.", property });
-    } catch (error) {
-      console.error("Error updating property by ID:", error);
-      return res
-        .status(500)
-        .json({ message: "Failed to update property by ID." });
-    }
+router.patch("/update-property/:id", authenticateToken, async (req, res) => {
+  // Check if the user is authenticated and has a valid token
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. User not authenticated." });
   }
-);
+  const UserRole = req.user.role === UserRoles.OWNER;
+  if (!UserRole) {
+    return res
+      .status(403)
+      .json({ message: "Access denied. Only owners can edit properties." });
+  }
+  try {
+    const { id } = req.params;
+
+    // Find the property by its ID
+    const property = await Property.findById(id);
+
+    if (!property) {
+      return res.status(404).json({ message: "Property not found." });
+    }
+
+    // Extract updated property details from the request body
+    const payload = req.body;
+
+    // Update the property with the new details
+    const isUpdated = await Property.updateOne({ _id: id }, payload);
+    if (isUpdated.modifiedCount === 0) {
+      return res.status(404).json({ message: "Failed to update property" });
+    }
+    return res
+      .status(200)
+      .json({ message: "Property updated successfully.", property });
+  } catch (error) {
+    console.error("Error updating property by ID:", error);
+    return res
+      .status(500)
+      .json({ message: "Failed to update property by ID." });
+  }
+});
 
 // Delete property by ID
 router.delete("/delete-property/:id", authenticateToken, async (req, res) => {
@@ -356,6 +333,13 @@ router.get("/get-properties", async (req, res) => {
     console.error("Error getting filtered properties:", error);
     return res.status(500).json({ message: "Failed to retrieve properties." });
   }
+});
+
+router.get("/properties/all", async (req, res) => {
+  const p = await Property.find();
+  console.log(p);
+
+  return res.status(200).json(p);
 });
 
 router.post("/addComplaint", authenticateToken, async (req, res) => {
