@@ -164,6 +164,10 @@ const roomSchema = new mongoose.Schema({
       },
     },
   ],
+  createdAt: {
+    type: Date,
+    default: new Date(),
+  },
 });
 
 // Create the Room model

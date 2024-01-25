@@ -135,6 +135,10 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  createdAt: {
+    type: Date,
+    default: new Date(),
+  },
 });
 
 // Create the Room model

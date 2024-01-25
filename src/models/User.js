@@ -69,6 +69,10 @@ const userSchema = new mongoose.Schema({
     required: true,
     default: new ObjectId(),
   },
+  createdAt: {
+    type: Date,
+    default: new Date(),
+  },
 });
 
 // Method to generate email verification token

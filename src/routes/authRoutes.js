@@ -5,6 +5,7 @@ const User = require("../models/User");
 const unirest = require("unirest");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
+const { default: axios } = require("axios");
 const clientId =
   "711974125982-gaeieriu9q60ctbps2qpbjitv0374d7l.apps.googleusercontent.com";
 
@@ -58,6 +59,7 @@ router.post("/login", async (req, res) => {
     return res.status(200).json({ message: "OTP sent successfully." });
   } catch (error) {
     console.error(error);
+    console.log("Error logging in user:", error);
     return res
       .status(500)
       .json({ message: "An error occurred while logging in." });
@@ -156,32 +158,27 @@ router.post("/verifyOtp", async (req, res) => {
 });
 
 async function sendOTP(phoneNumber, OTP) {
-  return new Promise((resolve, reject) => {
-    const req = unirest("GET", "https://www.fast2sms.com/dev/bulkV2");
-
-    req.query({
-      authorization:
-        "iI8bS2F1AnfoKHxpROrdel5VWBuNt6hLE0YsXwTmZJgqzj79yviVaRU1cXut8smbg0GLpKhrSfNxqvZD",
-      message: `Enter this OTP for logging in: ${OTP}`,
-      language: "english",
-      route: "q",
-      numbers: `${phoneNumber}`,
+  try {
+    const res = await axios.get("https://www.fast2sms.com/dev/bulkV2", {
+      params: {
+        authorization:
+          "iI8bS2F1AnfoKHxpROrdel5VWBuNt6hLE0YsXwTmZJgqzj79yviVaRU1cXut8smbg0GLpKhrSfNxqvZD",
+        message: `Enter this OTP for logging in: ${OTP}`,
+        language: "english",
+        route: "q",
+        numbers: `${phoneNumber}`,
+      },
+      headers: {
+        "cache-control": "no-cache",
+      },
     });
 
-    req.headers({
-      "cache-control": "no-cache",
-    });
-
-    req.end(function (res) {
-      if (res.error) {
-        console.error(res.error);
-        reject(res.error);
-      } else {
-        console.log(res.body);
-        resolve(res.body);
-      }
-    });
-  });
+    console.log(res.data);
+    return res.data;
+  } catch (error) {
+    console.error(error);
+    throw error;
+  }
 }
 
 module.exports = router;
