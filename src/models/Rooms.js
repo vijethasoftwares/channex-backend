@@ -1,10 +1,13 @@
 const mongoose = require("mongoose");
 
+// mongoose.Collection.createIndex({ roomNumber: 1 }, { unique: true });
+
 // Define the Room schema
 const roomSchema = new mongoose.Schema({
   roomNumber: {
     type: Number,
     required: true,
+    unique: true,
   },
   roomCategory: {
     type: String,
@@ -169,6 +172,8 @@ const roomSchema = new mongoose.Schema({
     default: new Date(),
   },
 });
+
+roomSchema.index({ roomNumber: 1 }, { unique: true });
 
 // Create the Room model
 const Room = mongoose.model("Room", roomSchema);
