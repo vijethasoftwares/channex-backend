@@ -32,6 +32,15 @@ const propertySchema = new mongoose.Schema({
       type: String,
     },
   },
+  landmark: {
+    type: String,
+  },
+  city: {
+    type: String,
+  },
+  state: {
+    type: String,
+  },
   nearbyPlaces: {
     type: [
       {

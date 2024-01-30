@@ -16,6 +16,8 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
       type,
       address,
       location,
+      city,
+      state,
       contactInfo,
       size,
       isFeatured,
@@ -52,7 +54,8 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
       name,
       type,
       address,
-      location,
+      city,
+      state,
       coOfLocation,
       contactInfo,
       size,
@@ -79,7 +82,12 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating property:", error);
-    return res.status(500).json({ message: "Failed to create property." });
+    return res.status(500).json({
+      // Error creating property: Error: Property validation failed: managerId: Cast to ObjectId failed for value "" (type string) at path "managerId" because of "BSONError"
+      message: error.message.includes("Cast to ObjectId failed")
+        ? "Manager ID is invalid."
+        : "Failed to create property.",
+    });
   }
 });
 

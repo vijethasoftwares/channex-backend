@@ -75,7 +75,11 @@ router.post("/create-room", authenticateToken, async (req, res) => {
       .json({ message: "Room created successfully.", room: newRoom });
   } catch (error) {
     console.error("Error creating room:", error);
-    return res.status(500).json({ message: "Failed to create room." });
+    return res.status(500).json({
+      message: error?.message.includes("duplicate key error")
+        ? "Room already exists"
+        : error?.message || "Failed to create room.",
+    });
   }
 });
 
