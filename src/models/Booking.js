@@ -115,7 +115,7 @@ const bookingSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
-  numberOfGuest: {
+  numberOfGuests: {
     type: Number,
     default: 1,
   },

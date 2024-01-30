@@ -33,7 +33,7 @@ router.post("/create-booking", async (req, res) => {
     propertyId,
     roomType,
     userId,
-    numberOfGuest,
+    numberOfGuests,
   } = req.body;
 
   try {
@@ -45,7 +45,7 @@ router.post("/create-booking", async (req, res) => {
       });
     }
 
-    const bookings = await Booking.find({
+    const overlappingBookings = await Booking.find({
       propertyId,
       roomType,
       roomCategory,
@@ -53,83 +53,86 @@ router.post("/create-booking", async (req, res) => {
       to: { $gte: new Date(from) },
     });
 
-    console.log(bookings, "bookings");
+    const bookingTotalGuests = overlappingBookings.reduce((acc, curr) => {
+      return acc + curr.numberOfGuests;
+    }, 0);
+    const totalGuess = bookingTotalGuests + numberOfGuests;
+    const totalMaxOccupancy = rooms.reduce((acc, curr) => {
+      return acc + curr.maxOccupancy;
+    }, 0);
+    if (totalGuess > totalMaxOccupancy) {
+      res.status(400).json({ message: "No rooms available" });
+    }
 
-    const roomsSize = rooms.reduce((total, room) => total + room.vacancy, 0);
+    // const roomsSize = rooms.reduce((total, room) => total + room.vacancy, 0);
 
-    console.log(roomsSize, "roomsSize");
+    // console.log(roomsSize, "roomsSize");
 
-    const overlappingBookings = bookings.filter((booking) => {
-      const bookingFrom = new Date(booking.from);
-      const bookingTo = new Date(booking.to);
-      const requestedFrom = new Date(from);
-      const requestedTo = new Date(to);
+    // const overlappingBookings = bookings.filter((booking) => {
+    //   const bookingFrom = new Date(booking.from);
+    //   const bookingTo = new Date(booking.to);
+    //   const requestedFrom = new Date(from);
+    //   const requestedTo = new Date(to);
 
-      return bookingFrom < requestedTo && bookingTo > requestedFrom;
-    });
+    //   return bookingFrom < requestedTo && bookingTo > requestedFrom;
+    // });
 
-    const totalGuests = overlappingBookings.reduce(
-      (total, booking) => total + booking.numberOfGuest,
-      0
-    );
-    console.log();
-    console.log(totalGuests, "totalGuests");
-    console.log(numberOfGuest, "number of guest");
+    // const totalGuests = overlappingBookings.reduce(
+    //   (total, booking) => total + booking.numberOfGuest,
+    //   0
+    // );
+    // console.log();
+    // console.log(totalGuests, "totalGuests");
+    // console.log(numberOfGuest, "number of guest");
 
     // 2 triple rooms having 5 vacancy for 4 guests
     // room 1 - 2 vacancy - 4 guests - 2 guests
     // room 2 - 3 vacancy - 2 guests - 0 guests
-    const roomsWithVacancy = rooms.filter((room) => room.vacancy > 0);
-    let nog = numberOfGuest;
+    // const roomsWithVacancy = rooms.filter((room) => room.vacancy > 0);
+    // let nog = numberOfGuest;
 
-    if (roomsSize >= totalGuests + numberOfGuest) {
-      const updatedVacancy = await Promise.all(
-        roomsWithVacancy.map((room) => {
-          if (nog <= 0) {
-            return Promise.resolve(room);
-          }
+    // if (roomsSize >= totalGuests + numberOfGuest) {
+    //   const updatedVacancy = await Promise.all(
+    //     roomsWithVacancy.map((room) => {
+    //       if (nog <= 0) {
+    //         return Promise.resolve(room);
+    //       }
 
-          const guestsToAssign = Math.min(nog, room.vacancy);
-          nog -= guestsToAssign;
-          const newVacancy = room.vacancy - guestsToAssign;
+    //       const guestsToAssign = Math.min(nog, room.vacancy);
+    //       nog -= guestsToAssign;
+    //       const newVacancy = room.vacancy - guestsToAssign;
 
-          return Room.findByIdAndUpdate(
-            room._id,
-            { vacancy: newVacancy },
-            { new: true }
-          );
-        })
-      );
-      console.log(updatedVacancy, "updatedVacancy");
-      const newBooking = new Booking({
-        paymentStatus,
-        paymentAmount,
-        roomCategory,
-        bookingType,
-        bookingStatus,
-        paymentMethod,
-        guestName: primaryGuestName,
-        guestPhoneNumber,
-        guestEmail,
-        from: new Date(from),
-        to: new Date(to),
-        propertyId,
-        roomType,
-        user: userId,
-        numberOfGuest,
-      });
+    //       return Room.findByIdAndUpdate(
+    //         room._id,
+    //         { vacancy: newVacancy },
+    //         { new: true }
+    //       );
+    //     })
+    //   );
 
-      await newBooking.save();
+    const newBooking = new Booking({
+      paymentStatus,
+      paymentAmount,
+      roomCategory,
+      bookingType,
+      bookingStatus,
+      paymentMethod,
+      guestName: primaryGuestName,
+      guestPhoneNumber,
+      guestEmail,
+      from: new Date(from),
+      to: new Date(to),
+      propertyId,
+      roomType,
+      user: userId,
+      numberOfGuests,
+    });
 
-      return res.status(201).json({
-        message: "Booking created successfully.",
-        booking: newBooking,
-      });
-    } else {
-      return res.status(400).json({
-        message: "Not enough rooms available.",
-      });
-    }
+    await newBooking.save();
+    return res.status(201).json({
+      message: "Booking created successfully.",
+      booking: newBooking,
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({
