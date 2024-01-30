@@ -7,7 +7,6 @@ const roomSchema = new mongoose.Schema({
   roomNumber: {
     type: Number,
     required: true,
-    unique: true,
   },
   roomCategory: {
     type: String,
@@ -173,7 +172,7 @@ const roomSchema = new mongoose.Schema({
   },
 });
 
-roomSchema.index({ roomNumber: 1 }, { unique: true });
+roomSchema.index({ roomNumber: 1, propertyId: 1 }, { unique: true });
 
 // Create the Room model
 const Room = mongoose.model("Room", roomSchema);
