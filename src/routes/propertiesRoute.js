@@ -5,6 +5,8 @@ const User = require("../models/User");
 const authenticateToken = require("../middleware/authMiddleware");
 const UserRoles = require("../config/consts");
 const Room = require("../models/Rooms");
+const Complaints = require("../models/Complaints");
+const { ObjectId } = require("mongodb");
 
 // Create a new property
 router.post("/create-properties", authenticateToken, async (req, res) => {
@@ -421,19 +423,35 @@ router.put("/updateComplaint", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/get-complaints/:ownerId", authenticateToken, async (req, res) => {
+router.get("/get-complaints", authenticateToken, async (req, res) => {
   try {
     // Extract payment capture details from the request
     // Find the room by its ID
-    const properties = await Property.find({
-      owner_user_id: req.params.ownerId,
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ message: "Access denied. User not authenticated." });
+    }
+    // Check if the user has the role of "owner" in the database
+    const userWithRoleOwner = req.user.role === UserRoles.OWNER;
+    if (!userWithRoleOwner) {
+      return res.status(403).json({
+        message: "Access denied. Only owners can see complaints.",
+      });
+    }
+    const complaints = await Complaints.find({
+      owner_user_id: req.user._id,
     });
-    return res
-      .status(404)
-      .json({ message: "properties", properties: properties });
+    return res.status(200).json({
+      message: "Complaints fetched successfully.",
+      complaints: complaints,
+    });
   } catch (error) {
-    console.error("Error capturing payment:", error);
-    return res.status(500).json({ message: "Failed to capture payment." });
+    console.error("Something went wrong:", error);
+    return res.status(500).json({
+      success: false,
+      message: error?.message || "Something went wrong.",
+    });
   }
 });
 
