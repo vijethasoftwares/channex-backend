@@ -1,23 +1,6 @@
-// Purpose: Mongoose Model for Complaints collection in MongoDB
-//   _id?: ObjectId;
-//   owner_user_id?: string;
-//   propertyId: string;
-//   bookingId?: string;
-//   userId: string;
-//   userName: string;
-//   userPhoneNumber: number;
-//   userEmailAddress?: string;
-//   complaintType: string;
-//   complaintDetails: string;
-//   complaintStatus: string;
-//   complaintRemarks?: string;
-//   createdAt?: Date;
-
 const mongoose = require("mongoose");
-const { ObjectId } = require("mongodb");
 
 // Define the Complaints schema
-
 const complaintSchema = new mongoose.Schema({
   owner_user_id: {
     type: mongoose.Schema.Types.ObjectId,

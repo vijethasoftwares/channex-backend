@@ -1,12 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const Property = require("../models/Property");
-const User = require("../models/User");
 const authenticateToken = require("../middleware/authMiddleware");
 const UserRoles = require("../config/consts");
 const Room = require("../models/Rooms");
 const Complaints = require("../models/Complaints");
-const { ObjectId } = require("mongodb");
+const Reviews = require("../models/Reviews");
 
 // Create a new property
 router.post("/create-properties", authenticateToken, async (req, res) => {
@@ -445,6 +444,37 @@ router.get("/get-complaints", authenticateToken, async (req, res) => {
     return res.status(200).json({
       message: "Complaints fetched successfully.",
       complaints: complaints,
+    });
+  } catch (error) {
+    console.error("Something went wrong:", error);
+    return res.status(500).json({
+      success: false,
+      message: error?.message || "Something went wrong.",
+    });
+  }
+});
+router.get("/get-reviews", authenticateToken, async (req, res) => {
+  try {
+    // Extract payment capture details from the request
+    // Find the room by its ID
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ message: "Access denied. User not authenticated." });
+    }
+    // Check if the user has the role of "owner" in the database
+    const userWithRoleOwner = req.user.role === UserRoles.OWNER;
+    if (!userWithRoleOwner) {
+      return res.status(403).json({
+        message: "Access denied. Only owners can see reviews.",
+      });
+    }
+    const reviews = await Reviews.find({
+      owner_user_id: req.user._id,
+    });
+    return res.status(200).json({
+      message: "Reviews fetched successfully.",
+      reviews,
     });
   } catch (error) {
     console.error("Something went wrong:", error);
