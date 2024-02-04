@@ -6,6 +6,8 @@ const UserRoles = require("../config/consts");
 const Room = require("../models/Rooms");
 const Complaints = require("../models/Complaints");
 const Reviews = require("../models/Reviews");
+const { ObjectId } = require("mongodb");
+const Booking = require("../models/Booking");
 
 // Create a new property
 router.post("/create-properties", authenticateToken, async (req, res) => {
@@ -173,14 +175,23 @@ router.get("/get-property-by-id/:propertyId", async (req, res) => {
 
     // Find the property by its ID
     const property = await Property.findById(propertyId);
+    const reviews = await Reviews.find({
+      propertyId: new ObjectId(propertyId),
+    });
+    const complaints = await Complaints.find({
+      propertyId: new ObjectId(propertyId),
+    });
 
     if (!property) {
       return res.status(404).json({ message: "Property not found." });
     }
 
-    return res
-      .status(200)
-      .json({ property, message: "property fetched successfully" });
+    return res.status(200).json({
+      property,
+      complaints,
+      reviews,
+      message: "property fetched successfully",
+    });
   } catch (error) {
     console.error("Error getting property by ID:", error);
     return res
@@ -344,13 +355,6 @@ router.get("/get-properties", async (req, res) => {
   }
 });
 
-router.get("/properties/all", async (req, res) => {
-  const p = await Property.find();
-  console.log(p);
-
-  return res.status(200).json(p);
-});
-
 router.post("/addComplaint", authenticateToken, async (req, res) => {
   try {
     // Extract property details from the request
@@ -453,6 +457,77 @@ router.get("/get-complaints", authenticateToken, async (req, res) => {
     });
   }
 });
+
+router.post("/acknowledge-complaint", authenticateToken, async (req, res) => {
+  try {
+    // Extract payment capture details from the request
+    const { complaintId } = req.body;
+    console.log(complaintId, "complaintId");
+
+    // Find the room by its ID
+    const complaint = await Complaints.updateOne(
+      { _id: complaintId },
+      { complaintStatus: "acknowledged" },
+      { upsert: true }
+    );
+    console.log(complaint, "complaint");
+    return res.status(200).json({
+      message: "Complaint acknowledged successfully.",
+      complaint,
+    });
+  } catch (error) {
+    console.error("Error acknowledging complaint:", error);
+    return res
+      .status(500)
+      .json({ message: "Failed to acknowledge complaint." });
+  }
+});
+
+router.post("/resolve-complaint", authenticateToken, async (req, res) => {
+  try {
+    // Extract payment capture details from the request
+    const { complaintId } = req.body;
+
+    // Find the room by its ID
+    const complaint = await Complaints.updateOne(
+      { _id: complaintId },
+      { complaintStatus: "resolved" },
+      { upsert: true }
+    );
+    return res.status(200).json({
+      message: "Complaint resolved successfully.",
+      complaint,
+    });
+  } catch (error) {
+    console.error("Error resolving complaint:", error);
+    return res.status(500).json({ message: "Failed to resolve complaint." });
+  }
+});
+
+//in progress complaint
+router.post("/in-progress-complaint", authenticateToken, async (req, res) => {
+  try {
+    // Extract payment capture details from the request
+    const { complaintId } = req.body;
+
+    // Find the room by its ID
+    const complaint = await Complaints.updateOne(
+      { _id: complaintId },
+      { complaintStatus: "in-progress" },
+      { upsert: true }
+    );
+    return res.status(200).json({
+      message: "Complaint in-progress successfully.",
+      complaint,
+    });
+  } catch (error) {
+    console.error("Error in-progress complaint:", error);
+    return res
+      .status(500)
+      .json({ message: "Failed to in-progress complaint." });
+  }
+});
+
 router.get("/get-reviews", authenticateToken, async (req, res) => {
   try {
     // Extract payment capture details from the request
@@ -483,6 +558,96 @@ router.get("/get-reviews", authenticateToken, async (req, res) => {
       message: error?.message || "Something went wrong.",
     });
   }
+});
+
+router.get("/get-reports", authenticateToken, async (req, res) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const monthly = await Booking.aggregate([
+    {
+      $match: {
+        createdAt: {
+          $lte: new Date(), // Only consider bookings created up to now
+        },
+        paymentStatus: "Paid",
+      },
+    },
+    {
+      $group: {
+        _id: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
+        },
+        total: { $sum: "$paymentAmount" },
+      },
+    },
+  ]);
+
+  const checkedIn = await Booking.aggregate([
+    {
+      $match: {
+        "checkedIn.primaryGuest": { $exists: true },
+        "checkedIn.primaryGuest.guest": { $exists: true },
+        // additoinal guetss
+        "checkedIn.additionalGuests": { $exists: true },
+        "checkedIn.additionalGuests.guest": { $exists: true },
+      },
+    },
+    {
+      $group: {
+        _id: {
+          year: { $year: "$createdAt" },
+          month: { $month: "$createdAt" },
+        },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const arrivals = await Booking.aggregate([
+    {
+      $match: {
+        from: {
+          $gte: today,
+          $lt: tomorrow,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        count: { $sum: "$numberOfGuests" },
+      },
+    },
+  ]);
+
+  const departures = await Booking.aggregate([
+    {
+      $match: {
+        to: {
+          $gte: today,
+          $lt: tomorrow,
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        count: { $sum: "$numberOfGuests" },
+      },
+    },
+  ]);
+
+  return res.status(200).json({
+    message: "Reports fetched successfully.",
+    monthly,
+    checkedIn,
+    arrivals,
+    departures,
+  });
 });
 
 module.exports = router;

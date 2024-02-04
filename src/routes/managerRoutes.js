@@ -123,6 +123,37 @@ router.patch(
           message: "Access denied. Only owners and managers can view bookings.",
         });
       }
+      const rooms = await Room.find({ roomType, roomCategory });
+      if (!rooms.length) {
+        return res.status(400).json({
+          message: `No ${roomCategory} ${roomType} rooms available on the selected property.`,
+        });
+      }
+      // const primaryGuestDetails = flattenObject(checkedIn.primaryGuest);
+      // const additionalGuestsDetails = checkedIn.additionalGuests;
+      // console.log(primaryGuestDetails, "primaryGuestDetails");
+
+      // const updatePrimaryGuestRoom = await Room.findOneAndUpdate(
+      //   { roomNumber: primaryGuestDetails.roomNumber, roomType, roomCategory },
+      //   {
+      //     "guestDetails.primaryGuests": {
+      //       $push: { guestDetails: { $each: [primaryGuestDetails] } },
+      //     },
+      //   }
+      // );
+
+      // const updateAdditionalGuestsRooms = await Room.updateMany(
+      //   {
+      //     roomType,
+      //     roomCategory,
+      //     roomNumber: {
+      //       $in: additionalGuestsDetails.map((guest) => guest.roomNumber),
+      //     },
+      //   },
+      //   { $push: { guestDetails: { $each: additionalGuestsDetails } } },
+      //   { upsert: true }
+      // );
+
       const updatedBooking = await Booking.updateOne(
         { _id: req.params.id },
         {
@@ -164,52 +195,54 @@ router.patch("/update-booking/:id", authenticateToken, async (req, res) => {
   const payload = req.body;
 
   try {
-    const rooms = await Room.find({
-      propertyId: payload.propertyId,
-      roomType: payload.roomType,
-    });
+    // const rooms = await Room.find({
+    //   propertyId: payload.propertyId,
+    //   roomType: payload.roomType,
+    // });
 
-    if (!rooms.length) {
-      return res.status(400).json({
-        message: `No ${payload?.roomCategory} ${payload?.roomType} rooms available on the selected property.`,
-      });
-    }
-    const roomsSize = rooms.reduce((total, room) => total + room.vacancy, 0);
+    // if (!rooms.length) {
+    //   return res.status(400).json({
+    //     message: `No ${payload?.roomCategory} ${payload?.roomType} rooms available on the selected property.`,
+    //   });
+    // }
+    // const roomsSize = rooms.reduce((total, room) => total + room.vacancy, 0);
 
-    const bookings = await Booking.find({
-      propertyId: payload.propertyId,
-      roomType: payload.roomType,
-      from: { $lte: new Date(payload.to) },
-      to: { $gte: new Date(payload.from) },
-    });
+    // const bookings = await Booking.find({
+    //   propertyId: payload.propertyId,
+    //   roomType: payload.roomType,
+    //   from: { $lte: new Date(payload.to) },
+    //   to: { $gte: new Date(payload.from) },
+    // });
 
-    const overlappingBookings = bookings.filter((booking) => {
-      const bookingFrom = new Date(booking.from);
-      const bookingTo = new Date(booking.to);
-      const requestedFrom = new Date(payload.from);
-      const requestedTo = new Date(payload.to);
+    // const overlappingBookings = bookings.filter((booking) => {
+    //   const bookingFrom = new Date(booking.from);
+    //   const bookingTo = new Date(booking.to);
+    //   const requestedFrom = new Date(payload.from);
+    //   const requestedTo = new Date(payload.to);
 
-      return bookingFrom < requestedTo && bookingTo > requestedFrom;
-    });
+    //   return bookingFrom < requestedTo && bookingTo > requestedFrom;
+    // });
 
-    const totalGuests = overlappingBookings.reduce(
-      (total, booking) => total + booking.numberOfGuest,
-      0
+    // const totalGuests = overlappingBookings.reduce(
+    //   (total, booking) => total + booking.numberOfGuest,
+    //   0
+    // );
+
+    const updatedBooking = await Booking.updateOne(
+      { _id: req.params.id },
+      payload
     );
+    return res.status(201).json({
+      message: "Booking updated successfully.",
+    });
 
-    if (roomsSize >= totalGuests) {
-      const updatedBooking = await Booking.updateOne(
-        { _id: req.params.id },
-        payload
-      );
-      return res.status(201).json({
-        message: "Booking updated successfully.",
-      });
-    } else {
-      return res.status(400).json({
-        message: "Not enough rooms available.",
-      });
-    }
+    // if (roomsSize >= totalGuests) {
+
+    // } else {
+    //   return res.status(400).json({
+    //     message: "Not enough rooms available.",
+    //   });
+    // }
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({ message: "Failed to update booking" });
@@ -342,3 +375,15 @@ router.post("/add-user/:bookingId", authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+
+const flattenObject = (obj, parent, res = {}) => {
+  for (let key in obj) {
+    let propName = parent ? parent + "." + key : key;
+    if (typeof obj[key] == "object" && obj[key] !== null) {
+      flattenObject(obj[key], propName, res);
+    } else {
+      res[propName] = obj[key];
+    }
+  }
+  return res;
+};

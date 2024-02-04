@@ -36,20 +36,38 @@ const roomSchema = new mongoose.Schema({
     required: true,
   },
   guestDetails: {
-    required: false,
-    type: [
-      {
-        name: {
-          type: String,
+    primaryGuests: {
+      required: false,
+      type: [
+        {
+          name: {
+            type: String,
+          },
+          email: {
+            type: String,
+          },
+          phoneNumber: {
+            type: String,
+          },
         },
-        email: {
-          type: String,
+      ],
+    },
+    additionalGuests: {
+      required: false,
+      type: [
+        {
+          name: {
+            type: String,
+          },
+          email: {
+            type: String,
+          },
+          phoneNumber: {
+            type: String,
+          },
         },
-        phoneNumber: {
-          type: String,
-        },
-      },
-    ],
+      ],
+    },
   },
   isFeatured: {
     type: Boolean,

@@ -113,31 +113,31 @@ const propertySchema = new mongoose.Schema({
       },
     ],
   },
-  complaints: [
-    {
-      userId: {
-        type: String,
-        required: true,
-        trim: true,
-        minlength: 1,
-      },
-      complaintText: {
-        type: String,
-        required: true,
-        default: "",
-      },
-      isResolved: {
-        type: Boolean,
-        required: true,
-        default: false,
-      },
-      date: {
-        type: Date,
-        required: true,
-        default: new Date(),
-      },
-    },
-  ],
+  // complaints: [
+  //   {
+  //     userId: {
+  //       type: String,
+  //       required: true,
+  //       trim: true,
+  //       minlength: 1,
+  //     },
+  //     complaintText: {
+  //       type: String,
+  //       required: true,
+  //       default: "",
+  //     },
+  //     isResolved: {
+  //       type: Boolean,
+  //       required: true,
+  //       default: false,
+  //     },
+  //     date: {
+  //       type: Date,
+  //       required: true,
+  //       default: new Date(),
+  //     },
+  //   },
+  // ],
   createdAt: {
     type: Date,
     default: new Date(),
