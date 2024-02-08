@@ -162,7 +162,6 @@ async function sendOTP(phoneNumber, OTP) {
     const res = await axios.get(
       `https://www.fast2sms.com/dev/bulkV2?authorization=${"iI8bS2F1AnfoKHxpROrdel5VWBuNt6hLE0YsXwTmZJgqzj79yviVaRU1cXut8smbg0GLpKhrSfNxqvZD"}&variables_values=${OTP}&route=otp&numbers=${phoneNumber}`,
       {
-        method: "GET",
         headers: {
           "cache-control": "no-cache",
         },
