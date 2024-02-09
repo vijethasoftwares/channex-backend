@@ -63,9 +63,9 @@ router.post("/login", async (req, res) => {
   } catch (error) {
     console.error(error);
     console.log("Error logging in user:", error);
-    return res
-      .status(500)
-      .json({ message: "An error occurred while logging in." });
+    return res.status(500).json({
+      message: error?.message || "An error occurred while logging in.",
+    });
   }
 });
 
@@ -156,7 +156,7 @@ router.post("/verifyOtp", async (req, res) => {
     }
   } catch (error) {
     console.error("Error logging in user:", error);
-    return res.status(500).json({ message: "OTP is wrong." });
+    return res.status(500).json({ message: error?.message || "OTP is wrong." });
   }
 });
 
