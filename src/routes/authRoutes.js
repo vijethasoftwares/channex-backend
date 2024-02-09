@@ -50,13 +50,16 @@ router.post("/login", async (req, res) => {
       Math.floor(Math.random() * 10)
     ).join("");
 
-    // Assuming you have a function to send OTP
-    await sendOTP(phoneNumber, OTP);
     // Assuming you have a field to store OTP in user model
     userFound.phoneOtp = OTP;
     await userFound.save();
 
-    return res.status(200).json({ message: "OTP sent successfully." });
+    // Assuming you have a function to send OTP
+    const sendingOtp = await sendOTP(phoneNumber, OTP);
+
+    return res
+      .status(200)
+      .json({ message: sendingOtp?.message || "OTP sent successfully." });
   } catch (error) {
     console.error(error);
     console.log("Error logging in user:", error);
