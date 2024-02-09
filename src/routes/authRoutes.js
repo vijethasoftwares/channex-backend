@@ -139,7 +139,7 @@ router.post("/verifyOtp", async (req, res) => {
         { userId: user._id },
         `${process.env.JWT_SECRET_KEY}`,
         {
-          expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRES,
+          expiresIn: "30d",
         }
       );
 
