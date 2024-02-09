@@ -127,10 +127,10 @@ router.post("/gmailLogin", async (req, res) => {
 
 router.post("/verifyOtp", async (req, res) => {
   try {
-    const { otp } = req.body;
+    const { otp, phoneNumber } = req.body;
 
     // Find the user by username
-    const user = await User.findOne({ phoneOtp: otp });
+    const user = await User.findOne({ phoneNumber, phoneOtp: otp });
 
     // Check if the user exists and the password matches
     if (user) {
@@ -149,7 +149,7 @@ router.post("/verifyOtp", async (req, res) => {
         role: user.role,
         token: token,
         message: "Login successful.",
-        expiresIn: process.env.JWT_ACCESS_TOKEN_EXPIRES,
+        expiresIn: "30d",
       });
     } else {
       return res.status(500).json({ message: "OTP is wrong." });
