@@ -161,18 +161,20 @@ router.post("/verifyOtp", async (req, res) => {
 });
 
 async function sendOTP(phoneNumber, OTP) {
+  const apiKey =
+    "iI8bS2F1AnfoKHxpROrdel5VWBuNt6hLE0YsXwTmZJgqzj79yviVaRU1cXut8smbg0GLpKhrSfNxqvZD";
+  console.log(phoneNumber, OTP, "phoneNumber, OTP");
   try {
-    const res = await axios.get(
-      `https://www.fast2sms.com/dev/bulkV2?authorization=${"iI8bS2F1AnfoKHxpROrdel5VWBuNt6hLE0YsXwTmZJgqzj79yviVaRU1cXut8smbg0GLpKhrSfNxqvZD"}&variables_values=${OTP}&route=otp&numbers=${phoneNumber}`,
+    const res = await fetch(
+      `https://www.fast2sms.com/dev/bulkV2?authorization=${apiKey}&variables_values=${OTP}&route=otp&numbers=${phoneNumber}`,
       {
+        method: "GET",
         headers: {
           "cache-control": "no-cache",
         },
       }
     );
-
-    console.log(res.data);
-    return res.data;
+    return res;
   } catch (error) {
     console.error(error);
     throw error;
