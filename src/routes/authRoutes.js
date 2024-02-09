@@ -56,10 +56,14 @@ router.post("/login", async (req, res) => {
 
     // Assuming you have a function to send OTP
     const sendingOtp = await sendOTP(phoneNumber, OTP);
+    const resData = await sendingOtp.json();
+    if (resData.return) {
+      return res.status(500).json({ message: "OTP not sent." });
+    }
 
     return res
       .status(200)
-      .json({ message: sendingOtp?.message || "OTP sent successfully." });
+      .json({ message: resData?.message || "OTP sent successfully." });
   } catch (error) {
     console.error(error);
     console.log("Error logging in user:", error);
