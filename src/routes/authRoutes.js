@@ -164,6 +164,61 @@ router.post("/verifyOtp", async (req, res) => {
   }
 });
 
+router.post("/verify/phone-or-email", async (req, res) => {
+  try {
+    const { emailOrPhone, password } = req.body;
+
+    if (!emailOrPhone) {
+      return res
+        .status(400)
+        .json({ message: "Email or phone number is required." });
+    }
+
+    const userFound = await User.findOne({
+      $or: [{ email: emailOrPhone }, { phoneNumber: emailOrPhone }],
+    });
+
+    if (!userFound) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    if (userFound.password !== password) {
+      return res.status(401).json({ message: "Password is wrong." });
+    }
+
+    const token = jwt.sign(
+      { userId: userFound._id },
+      `${process.env.JWT_SECRET_KEY}`,
+      {
+        expiresIn: "30d",
+      }
+    );
+
+    // Send a response with the token, user's _id, message, and expiration time
+    return res.status(200).json({
+      userId: userFound._id,
+      role: userFound.role,
+      token: token,
+      message: "Login successful.",
+      expiresIn: "30d",
+    });
+  } catch (error) {
+    console.error(error);
+    console.log("Error logging in user:", error);
+    return res
+      .status(500)
+      .json({ message: error || "An error occurred while logging in." });
+  }
+
+  // Assuming you have a function to send OTP
+});
+
+const OTP_EXPIRY_DURATION = 5 * 60 * 1000; // 5 minutes
+
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000); // Generate a 6-digit OTP
+};
+
 async function sendOTP(phoneNumber, OTP) {
   const apiKey =
     "iI8bS2F1AnfoKHxpROrdel5VWBuNt6hLE0YsXwTmZJgqzj79yviVaRU1cXut8smbg0GLpKhrSfNxqvZD";

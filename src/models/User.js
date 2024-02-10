@@ -38,6 +38,14 @@ const userSchema = new mongoose.Schema({
     required: false,
     unique: true,
   },
+  otp: {
+    type: String,
+    default: "",
+  },
+  otpExpire: {
+    type: Date,
+    default: new Date(),
+  },
   phoneNumber: {
     type: String,
     unique: true,
