@@ -55,6 +55,7 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
       name,
       phoneNumber,
       email,
+      role: UserRoles.MANAGER,
       createdBy: req.user._id,
     });
 
@@ -111,7 +112,9 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
     // });
   } catch (error) {
     console.error("Error registering user:", error);
-    return res.status(500).json({ message: "Registration failed." });
+    return res
+      .status(500)
+      .json({ message: error?.message || "Error creating user." });
   }
   // Save the property to the database
 

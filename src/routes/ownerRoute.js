@@ -8,6 +8,7 @@ const Property = require("../models/Property");
 const Booking = require("../models/Booking");
 const Room = require("../models/Rooms");
 const findSlot = require("../utils/findSlot");
+const { ObjectId } = require("mongodb");
 
 // Protected admin route
 router.get("/dashboard", authenticateToken, (req, res) => {
@@ -197,12 +198,10 @@ router.delete("/deleteManager/:id", authenticateToken, async (req, res) => {
 
     // Check if the user is the owner of the property or has the role of 'admin'
     if (req.user.role !== "Owner") {
-      return res
-        .status(403)
-        .json({
-          message:
-            "Access denied. You are not authorized to delete this property.",
-        });
+      return res.status(403).json({
+        message:
+          "Access denied. You are not authorized to delete this property.",
+      });
     }
 
     // Delete the property from the database
@@ -234,12 +233,10 @@ router.get("/getManager/:id", authenticateToken, async (req, res) => {
 
     // Check if the user is the owner of the property or has the role of 'admin'
     if (req.user.role !== "Owner") {
-      return res
-        .status(403)
-        .json({
-          message:
-            "Access denied. You are not authorized to delete this property.",
-        });
+      return res.status(403).json({
+        message:
+          "Access denied. You are not authorized to delete this property.",
+      });
     }
 
     const user = await User.findOne({ _id: id });
@@ -258,7 +255,7 @@ router.get("/getManager/:id", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/getMyManagers", authenticateToken, async (req, res) => {
+router.get("/managers/me", authenticateToken, async (req, res) => {
   // This route is protected, and only authenticated users with a valid token can access it.
   // You can access the user information from req.user.
   // Example: const userId = req.user.id;
@@ -271,7 +268,7 @@ router.get("/getMyManagers", authenticateToken, async (req, res) => {
     }
 
     // Find the property by its ID
-    const users = await User.find({ createdBy: req.user._id });
+    const users = await User.find({ createdBy: new ObjectId(req.user._id) });
 
     if (!users) {
       return res.status(404).json({ message: "managers not found." });
@@ -342,11 +339,9 @@ router.get("/getAllBookings", authenticateToken, async (req, res) => {
     const userHasAccess =
       req.user.role == "Owner" || req.user.role == "Manager";
     if (!userHasAccess) {
-      return res
-        .status(403)
-        .json({
-          message: "Access denied. Only owners and managers can view bookings.",
-        });
+      return res.status(403).json({
+        message: "Access denied. Only owners and managers can view bookings.",
+      });
     }
     const properties = await Property.find({ owner_user_id: req.user._id });
     console.log(req.user, "user");
@@ -463,12 +458,10 @@ router.get("/get-booking/:id", authenticateToken, async (req, res) => {
 
     // Check if the user is the owner of the property or has the role of 'admin'
     if (req.user.role !== "Owner") {
-      return res
-        .status(403)
-        .json({
-          message:
-            "Access denied. You are not authorized to delete this property.",
-        });
+      return res.status(403).json({
+        message:
+          "Access denied. You are not authorized to delete this property.",
+      });
     }
 
     const booking = await Booking.findOne({ _id: id });
@@ -480,12 +473,10 @@ router.get("/get-booking/:id", authenticateToken, async (req, res) => {
 
     // Delete the property from the database
 
-    return res
-      .status(200)
-      .json({
-        message: "Booking found successfully.",
-        booking: { ...booking._doc, user: user },
-      });
+    return res.status(200).json({
+      message: "Booking found successfully.",
+      booking: { ...booking._doc, user: user },
+    });
   } catch (error) {
     console.error("Error finding booking by ID:", error);
     return res.status(500).json({ message: "cannot find booking." });

@@ -48,6 +48,33 @@ const propertySchema = new mongoose.Schema({
       },
     ],
   },
+  document: {
+    propertyOwnStatus: {
+      type: String,
+      required: true,
+    },
+    documentType: {
+      type: String,
+      // enum: [
+      //   "Aadhar Card",
+      //   "PAN Card",
+      //   "Voter ID",
+      //   "Passport",
+      //   "Property Tax Receipt",
+      //   "Lease Agreement",
+      //   "Rent Agreement",
+      //   "NOC",
+      // ],
+      required: true,
+    },
+    documentNumber: {
+      type: String,
+      required: true,
+    },
+    pdfUrl: {
+      type: String,
+    },
+  },
   permissions: {
     type: [
       {

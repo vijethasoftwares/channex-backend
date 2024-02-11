@@ -18,11 +18,11 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
       name,
       type,
       address,
-      location,
       city,
       state,
       contactInfo,
       size,
+      document,
       isFeatured,
       description,
       isCoupleFriendly,
@@ -65,6 +65,7 @@ router.post("/create-properties", authenticateToken, async (req, res) => {
       isFeatured,
       managerId,
       isCoupleFriendly,
+      document,
       isParkingSpaceAvailable,
       nearbyPlaces,
       description,
@@ -267,7 +268,8 @@ router.delete("/delete-property/:id", authenticateToken, async (req, res) => {
       return res.status(404).json({ message: "Property not found." });
     }
 
-    const hasRooms = Room.findOne({ propertyId: id });
+    const hasRooms = await Room.findOne({ propertyId: id });
+    console.log(hasRooms, "hasRooms");
     if (hasRooms) {
       return res.status(404).json({
         message: "Property has rooms. Please delete rooms first.",
