@@ -55,11 +55,11 @@ router.post("/login", async (req, res) => {
     await userFound.save();
 
     // Assuming you have a function to send OTP
-    const sendingOtp = await sendOTP(phoneNumber, OTP);
-    const resData = await sendingOtp.json();
-    if (resData.return) {
-      return res.status(500).json({ message: "OTP not sent." });
-    }
+    // const sendingOtp = await sendOTP(phoneNumber, OTP);
+    // const resData = await sendingOtp.json();
+    // if (resData.return) {
+    //   return res.status(500).json({ message: "OTP not sent." });
+    // }
 
     return res
       .status(200)
@@ -219,25 +219,25 @@ const generateOTP = () => {
   return Math.floor(100000 + Math.random() * 900000); // Generate a 6-digit OTP
 };
 
-async function sendOTP(phoneNumber, OTP) {
-  const apiKey =
-    "iI8bS2F1AnfoKHxpROrdel5VWBuNt6hLE0YsXwTmZJgqzj79yviVaRU1cXut8smbg0GLpKhrSfNxqvZD";
-  console.log(phoneNumber, OTP, "phoneNumber, OTP");
-  try {
-    const res = await fetch(
-      `https://www.fast2sms.com/dev/bulkV2?authorization=${apiKey}&variables_values=${OTP}&route=otp&numbers=${phoneNumber}`,
-      {
-        method: "GET",
-        headers: {
-          "cache-control": "no-cache",
-        },
-      }
-    );
-    return res;
-  } catch (error) {
-    console.error(error);
-    throw error;
-  }
-}
+// async function sendOTP(phoneNumber, OTP) {
+//   const apiKey =
+//     "iI8bS2F1AnfoKHxpROrdel5VWBuNt6hLE0YsXwTmZJgqzj79yviVaRU1cXut8smbg0GLpKhrSfNxqvZD";
+//   console.log(phoneNumber, OTP, "phoneNumber, OTP");
+//   try {
+//     const res = await fetch(
+//       `https://www.fast2sms.com/dev/bulkV2?authorization=${apiKey}&variables_values=${OTP}&route=otp&numbers=${phoneNumber}`,
+//       {
+//         method: "GET",
+//         headers: {
+//           "cache-control": "no-cache",
+//         },
+//       }
+//     );
+//     return res;
+//   } catch (error) {
+//     console.error(error);
+//     throw error;
+//   }
+// }
 
 module.exports = router;

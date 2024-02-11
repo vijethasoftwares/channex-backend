@@ -88,6 +88,9 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
 
     var req = unirest("GET", "https://www.fast2sms.com/dev/bulkV2");
 
+    req.headers({
+      "cache-control": "no-cache",
+    });
     req.query({
       authorization:
         "iI8bS2F1AnfoKHxpROrdel5VWBuNt6hLE0YsXwTmZJgqzj79yviVaRU1cXut8smbg0GLpKhrSfNxqvZD",
@@ -97,9 +100,6 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
       numbers: `${phoneNumber}`,
     });
 
-    req.headers({
-      "cache-control": "no-cache",
-    });
     req.end(function (res) {
       if (res.error) throw new Error(res.error);
       console.log(res.body);
@@ -354,7 +354,7 @@ router.get("/getAllBookings", authenticateToken, async (req, res) => {
     const bookings =
       userHasAccess && req.user.role == "Manager"
         ? await Booking.find()
-        : await await Booking.find();
+        : await Booking.find();
     return res.status(200).json({ message: "Rooms", bookings: bookings });
   } catch (error) {
     console.error("Error:", error);
