@@ -67,11 +67,16 @@ const propertySchema = new mongoose.Schema({
       // ],
       required: true,
     },
+
+
     documentNumber: {
       type: String,
       required: true,
     },
-    pdfUrl: {
+    pdfUrlproperty: {
+      type: String,
+    },
+    pdfUrlowner: {
       type: String,
     },
   },
