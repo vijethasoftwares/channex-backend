@@ -9,6 +9,7 @@ const Booking = require("../models/Booking");
 const Room = require("../models/Rooms");
 const findSlot = require("../utils/findSlot");
 const { ObjectId } = require("mongodb");
+const UserRoles = require("../config/consts");
 
 // Protected admin route
 router.get("/dashboard", authenticateToken, (req, res) => {
@@ -38,7 +39,7 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
   }
   // Check if the user has the role of "owner" in the database
   try {
-    const { username, password, phoneNumber, name, email } = req.body;
+    const { username, password, phoneNumber, name, email, userRole } = req.body;
     const userWithRoleOwner = await User.findOne({
       _id: req.user._id,
       role: "Owner",
@@ -52,6 +53,7 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
 
     // Create a new user
     const newUser = new User({
+      role: UserRoles.MANAGER,
       username,
       password,
       name,
