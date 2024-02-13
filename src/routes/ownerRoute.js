@@ -45,7 +45,7 @@ router.post("/create-manager", authenticateToken, async (req, res) => {
     const { username, password, phoneNumber, name, email, userRole } = req.body;
 
     const newUser = new User({
-      role: UserRoles.MANAGER,
+      role: userRole || "User",
       username,
       password,
       name,
