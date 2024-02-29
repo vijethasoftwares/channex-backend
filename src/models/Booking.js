@@ -87,6 +87,12 @@ const bookingSchema = new mongoose.Schema({
       },
     ],
   },
+  checkedInAt: {
+    type: Date,
+  },
+  checkedOutAt: {
+    type: Date,
+  },
   roomCategory: {
     type: String,
     enum: ["A/C", "Non A/C"],

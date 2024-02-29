@@ -562,7 +562,99 @@ router.get("/get-reviews", authenticateToken, async (req, res) => {
   }
 });
 
-router.get("/get-reports", authenticateToken, async (req, res) => {
+router.get(
+  "/get-property-report/:reportType/:propertyId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { reportType, propertyId } = req.params;
+      const property = await Property.findById(propertyId);
+      if (!property) {
+        return res.status(404).json({ message: "Property not found." });
+      }
+      if (reportType === "day") {
+        const now = new Date();
+        const startOfDay = new Date(
+          now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+        ).setHours(0, 0, 0, 0);
+        const endOfDay = new Date(
+          now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+        ).setHours(23, 59, 59, 999);
+
+        const report = await Booking.find({
+          propertyId: propertyId,
+          createdAt: {
+            $gte: startOfDay,
+            $lt: endOfDay,
+          },
+        });
+        return res.status(200).json({
+          message: "Report fetched successfully.",
+          report,
+        });
+      }
+
+      if (reportType === "week") {
+        const now = new Date();
+        const startOfWeek = new Date(
+          now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+        ).setDate(now.getDate() - 7);
+
+        const report = await Booking.find({
+          propertyId: propertyId,
+          createdAt: {
+            $gte: startOfWeek,
+          },
+        });
+        return res.status(200).json({
+          message: "Report fetched successfully.",
+          report,
+        });
+      }
+
+      if (reportType === "month") {
+        const now = new Date();
+        const startOfMonth = new Date(
+          now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+        ).setMonth(now.getMonth() - 1);
+
+        const report = await Booking.find({
+          propertyId: propertyId,
+          createdAt: {
+            $gte: startOfMonth,
+          },
+        });
+        return res.status(200).json({
+          message: "Report fetched successfully.",
+          report,
+        });
+      }
+
+      if (reportType === "year") {
+        const now = new Date();
+        const startOfYear = new Date(
+          now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+        ).setFullYear(now.getFullYear() - 1);
+
+        const report = await Booking.find({
+          propertyId: propertyId,
+          createdAt: {
+            $gte: startOfYear,
+          },
+        });
+        return res.status(200).json({
+          message: "Report fetched successfully.",
+          report,
+        });
+      }
+    } catch (error) {
+      console.error("Error getting report:", error);
+      return res.status(500).json({ message: "Failed to retrieve report." });
+    }
+  }
+);
+
+router.get("/get-analytics", authenticateToken, async (req, res) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);

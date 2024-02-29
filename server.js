@@ -43,6 +43,11 @@ app.use("/api/map", map);
 
 const PORT = process.env.PORT || 8000;
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+//add mongoose connection then start the server
+db.on("error", console.error.bind(console, "Connection error:"));
+db.once("open", () => {
+  console.log("Connected to the database.");
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
 });

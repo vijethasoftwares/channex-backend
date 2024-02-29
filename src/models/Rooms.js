@@ -35,39 +35,49 @@ const roomSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  guestDetails: {
-    primaryGuests: {
-      required: false,
-      type: [
-        {
-          name: {
-            type: String,
-          },
-          email: {
-            type: String,
-          },
-          phoneNumber: {
-            type: String,
-          },
+  primaryGuests: {
+    required: false,
+    type: [
+      {
+        name: {
+          type: String,
         },
-      ],
-    },
-    additionalGuests: {
-      required: false,
-      type: [
-        {
-          name: {
-            type: String,
-          },
-          email: {
-            type: String,
-          },
-          phoneNumber: {
-            type: String,
-          },
+        email: {
+          type: String,
         },
-      ],
-    },
+        phone: {
+          type: String,
+        },
+        idProofBackImage: {
+          type: Object,
+        },
+        idProofFrontImage: {
+          type: Object,
+        },
+      },
+    ],
+  },
+  additionalGuests: {
+    required: false,
+    type: [
+      {
+        name: {
+          type: String,
+        },
+        email: {
+          type: String,
+        },
+        phone: {
+          type: String,
+        },
+        idProofBackImage: {
+          type: Object,
+        },
+        idProofFrontImage: {
+          type: Object,
+        },
+      },
+    ],
   },
   isFeatured: {
     type: Boolean,

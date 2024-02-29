@@ -10,6 +10,7 @@ const Room = require("../models/Rooms");
 const findSlot = require("../utils/findSlot");
 const { ObjectId } = require("mongodb");
 const UserRoles = require("../config/consts");
+const { groupBy } = require("../utils/utils");
 
 router.get(
   "/getAllBookings/:propertyId",
@@ -115,6 +116,8 @@ router.patch(
     const { numberOfGuest, roomType, roomCategory, from, to, checkedIn } =
       req.body;
 
+    console.log(checkedIn, "checkedIn");
+
     try {
       const userHasAccess =
         req.user.role == "Owner" || req.user.role == "Manager";
@@ -129,6 +132,54 @@ router.patch(
           message: `No ${roomCategory} ${roomType} rooms available on the selected property.`,
         });
       }
+
+      for (let room of checkedIn.additionalGuests) {
+        const roomDetails = await Room.findOne({
+          roomNumber: room.roomNumber,
+          roomType,
+          roomCategory,
+        });
+        for (const additionalGuest of roomDetails.additionalGuests) {
+          if (additionalGuest.email.includes(room.guest.email)) {
+            return res.status(400).json({
+              message: `Additional guest already checked in.`,
+            });
+          }
+        }
+        console.log(roomDetails, "roomDetails");
+        if (!roomDetails) {
+          return res.status(400).json({
+            message: `No ${roomCategory} ${roomType} rooms available on the selected property.`,
+          });
+        }
+        roomDetails.additionalGuests.push(room.guest);
+        await roomDetails.save();
+      }
+
+      const primaryGuestRoom = await Room.findOne({
+        roomNumber: checkedIn.primaryGuest.roomNumber,
+        roomType,
+        roomCategory,
+      });
+
+      console.log(primaryGuestRoom, "primaryGuestRoom");
+
+      if (!primaryGuestRoom) {
+        return res.status(400).json({
+          message: `No ${roomCategory} ${roomType} rooms available on the selected property.`,
+        });
+      }
+      for (const primaryGuest of primaryGuestRoom.primaryGuests) {
+        if (primaryGuest.email.includes(checkedIn.primaryGuest.guest.email)) {
+          return res.status(400).json({
+            message: `Primary guest already checked in.`,
+          });
+        }
+      }
+
+      primaryGuestRoom.primaryGuests.push(checkedIn.primaryGuest.guest);
+      await primaryGuestRoom.save();
+
       // const primaryGuestDetails = flattenObject(checkedIn.primaryGuest);
       // const additionalGuestsDetails = checkedIn.additionalGuests;
       // console.log(primaryGuestDetails, "primaryGuestDetails");
@@ -164,7 +215,72 @@ router.patch(
             from,
             to,
             checkedIn,
+            checkedInAt: new Date(),
             isCheckedIn: true,
+          },
+        }
+      );
+      console.log(updatedBooking, "updatedBooking");
+      return res
+        .status(200)
+        .json({ message: "successfully updated booking", updatedBooking });
+    } catch (error) {
+      console.error("Error:", error);
+      return res.status(500).json({ message: "Failed to update booking" });
+    }
+  }
+);
+
+router.patch(
+  "/update-booking/check-out/:id",
+  authenticateToken,
+  async (req, res) => {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ message: "Access denied. User not authenticated." });
+    }
+
+    try {
+      const userHasAccess =
+        req.user.role == "Owner" || req.user.role == "Manager";
+      if (!userHasAccess) {
+        return res.status(403).json({
+          message: "Access denied. Only owners and managers can view bookings.",
+        });
+      }
+      const booking = await Booking.findById(req.params.id);
+      const primaryGuestRoom = await Room.findOne({
+        roomType: booking.roomType,
+        roomCategory: booking.roomCategory,
+        roomNumber: booking.checkedIn.primaryGuest.roomNumber,
+      });
+      console.log(primaryGuestRoom, "primaryGuest");
+      //remove primary guest from room
+
+      primaryGuestRoom.primaryGuests = primaryGuestRoom.primaryGuests.filter(
+        (guest) => guest.email !== booking.checkedIn.primaryGuest.guest.email
+      );
+      await primaryGuestRoom.save();
+      //remove additional guests from room
+      for (let room of booking.checkedIn.additionalGuests) {
+        const additionalGuest = await Room.findOne({
+          roomType: booking.roomType,
+          roomCategory: booking.roomCategory,
+          roomNumber: room.roomNumber,
+        });
+        additionalGuest.additionalGuests =
+          additionalGuest.additionalGuests.filter(
+            (guest) => guest.email !== room.guest.email
+          );
+        await additionalGuest.save();
+      }
+      const updatedBooking = await Booking.updateOne(
+        { _id: req.params.id },
+        {
+          $set: {
+            isCheckedOut: true,
+            checkedOutAt: new Date(),
           },
         }
       );
@@ -248,44 +364,6 @@ router.patch("/update-booking/:id", authenticateToken, async (req, res) => {
     return res.status(500).json({ message: "Failed to update booking" });
   }
 });
-
-router.patch(
-  "/update-booking/check-out/:id",
-  authenticateToken,
-  async (req, res) => {
-    if (!req.user) {
-      return res
-        .status(401)
-        .json({ message: "Access denied. User not authenticated." });
-    }
-
-    try {
-      const userHasAccess =
-        req.user.role == "Owner" || req.user.role == "Manager";
-      if (!userHasAccess) {
-        return res.status(403).json({
-          message: "Access denied. Only owners and managers can view bookings.",
-        });
-      }
-      const updatedBooking = await Booking.updateOne(
-        { _id: req.params.id },
-        {
-          $set: {
-            isCheckedOut: true,
-          },
-        }
-      );
-      console.log(updatedBooking, "updatedBooking");
-      return res
-        .status(200)
-        .json({ message: "successfully updated booking", updatedBooking });
-    } catch (error) {
-      console.error("Error:", error);
-      return res.status(500).json({ message: "Failed to update booking" });
-    }
-  }
-);
-
 router.post("/edit-booking/:id", authenticateToken, async (req, res) => {
   try {
     // Extract booking details from the request body
