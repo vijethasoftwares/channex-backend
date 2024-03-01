@@ -12,6 +12,9 @@ const bookingSchema = new mongoose.Schema({
     ref: "Property",
     required: true,
   },
+  folioId: {
+    type: String,
+  },
   bookingType: {
     type: String,
     enum: ["Online", "Walk In", "Call"],

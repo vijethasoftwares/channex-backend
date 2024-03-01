@@ -61,7 +61,7 @@ router.post("/create-booking", async (req, res) => {
       return acc + curr.maxOccupancy;
     }, 0);
     if (totalGuess > totalMaxOccupancy) {
-      res.status(400).json({ message: "No rooms available" });
+      return res.status(400).json({ message: "No rooms available" });
     }
 
     // const roomsSize = rooms.reduce((total, room) => total + room.vacancy, 0);
@@ -109,8 +109,46 @@ router.post("/create-booking", async (req, res) => {
     //       );
     //     })
     //   );
+    // Create an array of month abbreviations
+    const monthAbbr = [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC",
+    ];
+
+    // Get today's date
+    const date = new Date();
+
+    // Format the date parts
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = monthAbbr[date.getMonth()];
+    const year = date.getFullYear().toString().slice(-2);
+
+    // Create the folio ID prefix
+    const folioIdPrefix = `${day}${month}${year}`;
+
+    // Find bookings with a folio ID that starts with the prefix
+    const bookings = await Booking.find({
+      folioId: new RegExp(`^${folioIdPrefix}`, "i"),
+    });
+
+    // Get the next folio number, padded with leading zeros
+    const folioNumber = (bookings.length + 1).toString().padStart(4, "0");
+
+    // Create the folio ID
+    const folioId = `#${folioIdPrefix}${folioNumber}`;
 
     const newBooking = new Booking({
+      folioId,
       paymentStatus,
       paymentAmount,
       roomCategory,
