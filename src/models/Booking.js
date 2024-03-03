@@ -1,4 +1,5 @@
 // updated booking model
+const { UUID } = require("mongodb");
 const mongoose = require("mongoose");
 
 // Define the Room schema
@@ -32,64 +33,41 @@ const bookingSchema = new mongoose.Schema({
   guestEmail: {
     type: String,
   },
-  checkedIn: {
-    primaryGuest: {
+  checkedIn: [
+    {
+      _id: {
+        type: String,
+        default: new UUID().toString(),
+      },
+      isPrimary: {
+        type: Boolean,
+        default: true,
+      },
+      name: {
+        type: String,
+      },
+      phone: {
+        type: Number,
+      },
+      email: {
+        type: String,
+      },
+      dob: {
+        type: Date,
+      },
+      idProofFrontImage: {
+        label: String,
+        url: String,
+      },
+      idProofBackImage: {
+        label: String,
+        url: String,
+      },
       roomNumber: {
         type: Number,
       },
-      guest: {
-        name: {
-          type: String,
-        },
-        phone: {
-          type: Number,
-        },
-        email: {
-          type: String,
-        },
-        dob: {
-          type: Date,
-        },
-        idProofFrontImage: {
-          label: String,
-          url: String,
-        },
-        idProofBackImage: {
-          label: String,
-          url: String,
-        },
-      },
     },
-    additionalGuests: [
-      {
-        roomNumber: {
-          type: Number,
-        },
-        guest: {
-          name: {
-            type: String,
-          },
-          phone: {
-            type: Number,
-          },
-          email: {
-            type: String,
-          },
-          dob: {
-            type: Date,
-          },
-          idProofFrontImage: {
-            label: String,
-            url: String,
-          },
-          idProofBackImage: {
-            label: String,
-            url: String,
-          },
-        },
-      },
-    ],
-  },
+  ],
   checkedInAt: {
     type: Date,
   },

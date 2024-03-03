@@ -12,4 +12,24 @@ function groupBy(list, keyGetter) {
   return map;
 }
 
-module.exports = { groupBy };
+function groupByProperties(items, keys) {
+  const groups = items.reduce((result, item) => {
+    const groupKey = keys
+      .map((key) => item[key])
+      .join("-")
+      .replace(/\s/g, "-");
+    if (!result[groupKey]) {
+      result[groupKey] = keys.reduce(
+        (group, key) => ({ ...group, [key]: item[key] }),
+        {}
+      );
+      result[groupKey].data = [];
+    }
+    result[groupKey].data.push(item);
+    return result;
+  }, {});
+
+  return Object.values(groups);
+}
+
+module.exports = { groupBy, groupByProperties };

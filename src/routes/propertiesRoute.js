@@ -654,7 +654,7 @@ router.get(
   }
 );
 
-router.get("/get-analytics", authenticateToken, async (req, res) => {
+router.get("/get-analytics/:id", authenticateToken, async (req, res) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -679,24 +679,41 @@ router.get("/get-analytics", authenticateToken, async (req, res) => {
       },
     },
   ]);
-
-  const checkedIn = await Booking.aggregate([
+  //return total number of guests checked in today
+  const todaysCheckedIn = await Booking.aggregate([
     {
       $match: {
-        "checkedIn.primaryGuest": { $exists: true },
-        "checkedIn.primaryGuest.guest": { $exists: true },
-        // additoinal guetss
-        "checkedIn.additionalGuests": { $exists: true },
-        "checkedIn.additionalGuests.guest": { $exists: true },
+        isCheckedIn: true,
+        isCheckedOut: false,
+        checkedInAt: {
+          $gte: today,
+          $lt: tomorrow,
+        },
       },
     },
     {
       $group: {
-        _id: {
-          year: { $year: "$createdAt" },
-          month: { $month: "$createdAt" },
+        _id: null,
+        count: { $sum: "$numberOfGuests" },
+      },
+    },
+  ]);
+
+  const todaysCheckedOut = await Booking.aggregate([
+    {
+      $match: {
+        isCheckedIn: true,
+        isCheckedOut: true,
+        checkedOutAt: {
+          $gte: today,
+          $lt: tomorrow,
         },
-        count: { $sum: 1 },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        count: { $sum: "$numberOfGuests" },
       },
     },
   ]);
@@ -738,7 +755,8 @@ router.get("/get-analytics", authenticateToken, async (req, res) => {
   return res.status(200).json({
     message: "Reports fetched successfully.",
     monthly,
-    checkedIn,
+    todaysCheckedIn,
+    todaysCheckedOut,
     arrivals,
     departures,
   });

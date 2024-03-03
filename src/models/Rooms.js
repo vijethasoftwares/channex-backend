@@ -1,3 +1,4 @@
+const { UUID } = require("mongodb");
 const mongoose = require("mongoose");
 
 // mongoose.Collection.createIndex({ roomNumber: 1 }, { unique: true });
@@ -35,10 +36,18 @@ const roomSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
-  primaryGuests: {
+  guests: {
     required: false,
     type: [
       {
+        _id: {
+          type: String,
+        },
+        isPrimary: {
+          default: false,
+          type: Boolean,
+        },
+
         name: {
           type: String,
         },
@@ -54,27 +63,8 @@ const roomSchema = new mongoose.Schema({
         idProofFrontImage: {
           type: Object,
         },
-      },
-    ],
-  },
-  additionalGuests: {
-    required: false,
-    type: [
-      {
-        name: {
-          type: String,
-        },
-        email: {
-          type: String,
-        },
-        phone: {
-          type: String,
-        },
-        idProofBackImage: {
-          type: Object,
-        },
-        idProofFrontImage: {
-          type: Object,
+        roomNumber: {
+          type: Number,
         },
       },
     ],
