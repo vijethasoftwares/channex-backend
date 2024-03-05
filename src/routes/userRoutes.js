@@ -25,6 +25,7 @@ router.post("/create-booking", async (req, res) => {
     bookingType,
     bookingStatus,
     paymentMethod,
+    noOfMonths,
     primaryGuestName,
     guestPhoneNumber,
     guestEmail,
@@ -61,7 +62,9 @@ router.post("/create-booking", async (req, res) => {
       return acc + curr.maxOccupancy;
     }, 0);
     if (totalGuess > totalMaxOccupancy) {
-      return res.status(400).json({ message: "No rooms available" });
+      return res.status(400).json({
+        message: "Not enough rooms available for the selected dates.",
+      });
     }
 
     // const roomsSize = rooms.reduce((total, room) => total + room.vacancy, 0);
@@ -125,7 +128,7 @@ router.post("/create-booking", async (req, res) => {
       "DEC",
     ];
 
-    // Get today's date
+    // Create a new date object
     const date = new Date();
 
     // Format the date parts
@@ -136,16 +139,23 @@ router.post("/create-booking", async (req, res) => {
     // Create the folio ID prefix
     const folioIdPrefix = `${day}${month}${year}`;
 
-    // Find bookings with a folio ID that starts with the prefix
+    // Find bookings with a folio ID that starts with the prefix and sort them by folio ID in descending order
     const bookings = await Booking.find({
-      folioId: new RegExp(`^${folioIdPrefix}`, "i"),
-    });
+      folioId: new RegExp(`^#${folioIdPrefix}`, "i"),
+    }).sort({ folioId: -1 });
 
-    // Get the next folio number, padded with leading zeros
-    const folioNumber = (bookings.length + 1).toString().padStart(4, "0");
+    // Get the folio number from the first booking's folio ID, increment it, and pad it with leading zeros
+    const folioNumber =
+      bookings.length > 0
+        ? (parseInt(bookings[0].folioId.slice(-3)) + 1)
+            .toString()
+            .padStart(3, "0")
+        : "001";
 
     // Create the folio ID
     const folioId = `#${folioIdPrefix}${folioNumber}`;
+
+    console.log(folioId, "folioId");
 
     const newBooking = new Booking({
       folioId,
@@ -160,6 +170,7 @@ router.post("/create-booking", async (req, res) => {
       guestEmail,
       from: new Date(from),
       to: new Date(to),
+      noOfMonths,
       propertyId,
       roomType,
       user: userId,

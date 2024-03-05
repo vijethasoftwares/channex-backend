@@ -37,7 +37,11 @@ const bookingSchema = new mongoose.Schema({
     {
       _id: {
         type: String,
-        default: new UUID().toString(),
+        // default: new UUID().toString(),
+      },
+
+      folioId: {
+        type: String,
       },
       isPrimary: {
         type: Boolean,
@@ -89,6 +93,9 @@ const bookingSchema = new mongoose.Schema({
   to: {
     type: Date,
     required: true,
+  },
+  noOfMonths: {
+    type: Number,
   },
   paymentMethod: {
     type: String,

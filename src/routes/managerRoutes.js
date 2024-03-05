@@ -113,8 +113,16 @@ router.patch(
         .status(401)
         .json({ message: "Access denied. User not authenticated." });
     }
-    const { numberOfGuest, roomType, roomCategory, from, to, checkedIn } =
-      req.body;
+    const {
+      numberOfGuest,
+      roomType,
+      roomCategory,
+      from,
+      to,
+      checkedIn,
+      folioId,
+      selectedProperty,
+    } = req.body;
 
     console.log(checkedIn, "checkedIn");
 
@@ -133,17 +141,60 @@ router.patch(
         });
       }
 
-      const guestsByRoom = groupByProperties(checkedIn, ["roomNumber"]);
-      const updateUserToRomm = guestsByRoom.map(async (obj) => {
-        const getRoom = await Room.updateOne(
-          { roomNumber: obj.roomNumber },
-          {
-            //push to guests obj
-            $push: {
-              guests: obj.data,
-            },
+      //map over check-in and there is folio number of booking so take that no and add /01 or/02 according to the number of guests and add to room
+      const updatedGuests = checkedIn.map((guest, index) => {
+        return {
+          ...guest,
+          folioId: `${folioId}/${index + 1}`,
+          bookingId: new ObjectId(req.params.id),
+        };
+      });
+
+      const guestsByRoom = groupByProperties(updatedGuests, ["roomNumber"]);
+      // const updateUserToRomm = await guestsByRoom.map(async (obj) => {
+      //   const getRoom = await Room.updateOne(
+      //     {
+      //       propertyId: new ObjectId(selectedProperty),
+      //       roomType: roomType,
+      //       roomCategory: roomCategory,
+      //       roomNumber: obj.roomNumber,
+      //     },
+      //     {
+      //       //push to guests obj
+      //       $push: {
+      //         guests: obj.data,
+      //       },
+      //     }
+      //   );
+      // });
+
+      const updateUserToRoom = await guestsByRoom.map(async (obj) => {
+        // Find the room
+        const room = await Room.findOne({
+          propertyId: new ObjectId(selectedProperty),
+          roomType: roomType,
+          roomCategory: roomCategory,
+          roomNumber: obj.roomNumber,
+        });
+
+        // Iterate over the guests in the data object
+        for (const guestData of obj.data) {
+          // Check if the guest already exists in the guests array
+          const guestIndex = room.guests.findIndex(
+            (guest) => guest.phone == guestData.phone
+          );
+
+          if (guestIndex !== -1) {
+            // The guest already exists, update it
+            room.guests[guestIndex] = guestData;
+          } else {
+            // The guest doesn't exist, push it
+            room.guests.push(guestData);
           }
-        );
+        }
+
+        // Save the room
+        await room.save();
       });
 
       const updatedBooking = await Booking.updateOne(
@@ -155,7 +206,8 @@ router.patch(
             roomCategory,
             from,
             to,
-            checkedIn,
+            checkedIn: updatedGuests,
+            //set time also in the booking model for check-in
             checkedInAt: new Date(),
             isCheckedIn: true,
           },
