@@ -11,55 +11,38 @@ const findSlot = require("../utils/findSlot");
 const { ObjectId } = require("mongodb");
 const UserRoles = require("../config/consts");
 const { groupBy, groupByProperties } = require("../utils/utils");
+const KSR = require("../models/KSR");
 
-router.get(
-  "/getAllBookings/:propertyId",
-  authenticateToken,
-  async (req, res) => {
-    if (!req.user) {
-      return res
-        .status(401)
-        .json({ message: "Access denied. User not authenticated." });
-    }
-    // Check if the user has the role of "owner" or "manager" in the database
-    try {
-      // Extract payment capture details from the request
-      // Find the room by its ID
-      const userHasAccess =
-        req.user.role == "Owner" || req.user.role == "Manager";
-      if (!userHasAccess) {
-        return res.status(403).json({
-          message: "Access denied. Only owners and managers can view bookings.",
-        });
-      }
-      const testproperties = await Booking.aggregate([
-        { $match: { propertyId: new ObjectId("658139e08ce18c0808dadf9a") } },
-        {
-          $lookup: {
-            from: "users", //your schema name from mongoDB
-            localField: "user", //user_id from user(main) model
-            foreignField: "_id", //user_id from user(sub) model
-            as: "users", //result var name
-          },
-        },
-      ]);
-      // Assuming managers should see all bookings and owners only their own properties' bookings
-      const bookings =
-        userHasAccess &&
-        (req.user.role == "Manager" || req.user.role == "Owner")
-          ? await Booking.find({ propertyId: req.params.propertyId })
-          : await Booking.find();
-      return res.status(200).json({
-        message: "Rooms",
-        bookings: bookings,
-        testProperties: testproperties,
-      });
-    } catch (error) {
-      console.error("Error:", error);
-      return res.status(500).json({ message: "Failed to process request." });
-    }
+router.get("/get-bookings/:propertyId", authenticateToken, async (req, res) => {
+  if (!req.user) {
+    return res
+      .status(401)
+      .json({ message: "Access denied. User not authenticated." });
   }
-);
+  // Check if the user has the role of "owner" or "manager" in the database
+  try {
+    // Extract payment capture details from the request
+    // Find the room by its ID
+    const userHasAccess =
+      req.user.role == UserRoles.OWNER || req.user.role == UserRoles.MANAGER;
+    if (!userHasAccess) {
+      return res.status(403).json({
+        message: "Access denied. Only owners and managers can view bookings.",
+      });
+    }
+    const bookings = await Booking.find({
+      propertyId: req.params.propertyId,
+      user: req.user._id,
+    });
+    return res.status(200).json({
+      message: "successfully fetched bookings",
+      bookings: bookings,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ message: "Failed to process request." });
+  }
+});
 
 router.get("/get-booking/:id", authenticateToken, async (req, res) => {
   if (!req.user) {
@@ -437,6 +420,128 @@ router.post("/add-user/:bookingId", authenticateToken, async (req, res) => {
     return res.status(500).json({ message: "Failed to create room." });
   }
 });
+
+router.post("/inventory/ksr/create", authenticateToken, async (req, res) => {
+  const { foodMenu, propertyId } = req.body;
+
+  try {
+    const userHasAccess =
+      req.user.role == UserRoles.OWNER || req.user.role == UserRoles.MANAGER;
+    if (!userHasAccess) {
+      return res.status(403).json({
+        message:
+          "Access denied. Only owners and managers can create Kitchen Stock Register.",
+      });
+    }
+    const property = await Property.findOne({
+      _id: propertyId,
+      owner_user_id: req.user._id,
+    });
+    if (!property) {
+      return res.status(404).json({
+        message: "Property not found",
+      });
+    }
+    const ksr = await KSR.findOne({ propertyId: propertyId });
+    if (ksr) {
+      ksr.foodMenu = foodMenu;
+      await ksr.save();
+      return res.status(200).json({
+        message: "KSR updated successfully",
+        ksr,
+      });
+    }
+    const newKSR = new KSR({
+      propertyId: propertyId,
+      foodMenu: foodMenu,
+    });
+    await newKSR.save();
+
+    return res.status(201).json({
+      message: "KSR created successfully",
+      ksr: newKSR,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ message: "Failed to update KSR" });
+  }
+});
+
+router.get(
+  "/inventory/ksr/:propertyId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userHasAccess =
+        req.user.role == UserRoles.OWNER || req.user.role == UserRoles.MANAGER;
+      if (!userHasAccess) {
+        return res.status(403).json({
+          message:
+            "Access denied. Only owners and managers can view Kitchen Stock Register.",
+        });
+      }
+      const rooms = await Room.find({
+        propertyId: req.params.propertyId,
+        //guetss array should not be empty
+        "guests.0": { $exists: true },
+      });
+      const ksr = await KSR.findOne({ propertyId: req.params.propertyId });
+      if (!ksr) {
+        return res.status(404).json({
+          message: "KSR not found",
+        });
+      }
+      return res.status(200).json({
+        message: "KSR fetched successfully",
+        foodMenu: ksr.foodMenu,
+        rooms,
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      return res.status(500).json({ message: "Failed to fetch KSR" });
+    }
+  }
+);
+
+router.get(
+  "/get-room-details/:propertyId",
+  authenticateToken,
+  async (req, res) => {
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ message: "Access denied. User not authenticated." });
+    }
+    try {
+      const userHasAccess =
+        req.user.role == UserRoles.OWNER || req.user.role == UserRoles.MANAGER;
+      if (!userHasAccess) {
+        return res.status(403).json({
+          message: "Access denied. Only owners and managers can view bookings.",
+        });
+      }
+      const bookings = await Booking.aggregate([
+        {
+          $match: {
+            propertyId: new ObjectId(req.params.propertyId),
+          },
+        },
+        {
+          $lookup: {
+            from: "rooms",
+            localField: "roomType",
+            foreignField: "roomType",
+            as: "room",
+          },
+        },
+      ]);
+      console.log(bookings, "bookings");
+    } catch (error) {
+      console.error("Error:", error);
+      return res.status(500).json({ message: "Failed to process request." });
+    }
+  }
+);
 
 module.exports = router;
 
