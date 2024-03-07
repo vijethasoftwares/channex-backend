@@ -4,7 +4,7 @@ const unirest = require("unirest");
 const authenticateToken = require("../middleware/authMiddleware");
 const User = require("../models/User");
 const transporter = require("../config/nodemailer");
-const UserRoles = require("../config/consts");
+const { UserRoles } = require("../config/consts");
 
 // Protected admin route
 router.get("/dashboard", authenticateToken, (req, res) => {

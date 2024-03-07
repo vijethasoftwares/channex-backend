@@ -2,12 +2,12 @@ const express = require("express");
 const router = express.Router();
 const Property = require("../models/Property");
 const authenticateToken = require("../middleware/authMiddleware");
-const UserRoles = require("../config/consts");
 const Room = require("../models/Rooms");
 const Complaints = require("../models/Complaints");
 const Reviews = require("../models/Reviews");
 const { ObjectId } = require("mongodb");
 const Booking = require("../models/Booking");
+const { UserRoles } = require("../config/consts");
 
 // Create a new property
 router.post("/create-properties", authenticateToken, async (req, res) => {

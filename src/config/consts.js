@@ -9,4 +9,9 @@ const UserRoles = Object.freeze({
   CHEF: "Chef",
 });
 
-module.exports = UserRoles;
+const paymentStatus = Object.freeze({
+  PAID: "Paid",
+  NOTPAID: "Not Paid",
+});
+
+module.exports = { UserRoles, paymentStatus };

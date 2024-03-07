@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const { ObjectId } = require("mongodb");
-const UserRoles = require("../config/consts");
+const { UserRoles } = require("../config/consts");
 
 const userSchema = new mongoose.Schema({
   username: {

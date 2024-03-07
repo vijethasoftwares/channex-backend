@@ -5,7 +5,7 @@ const User = require("../models/User");
 const authenticateToken = require("../middleware/authMiddleware");
 const Razorpay = require("razorpay");
 const { slotFound } = require("../utils/findSlot");
-const UserRoles = require("../config/consts");
+const { UserRoles } = require("../config/consts");
 
 const razorpay = new Razorpay({
   key_id: `${process.env.RAZORPAY_ID}`,

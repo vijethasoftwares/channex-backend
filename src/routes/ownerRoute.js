@@ -9,7 +9,7 @@ const Booking = require("../models/Booking");
 const Room = require("../models/Rooms");
 const findSlot = require("../utils/findSlot");
 const { ObjectId } = require("mongodb");
-const UserRoles = require("../config/consts");
+const { UserRoles } = require("../config/consts");
 
 // Protected admin route
 router.get("/dashboard", authenticateToken, (req, res) => {

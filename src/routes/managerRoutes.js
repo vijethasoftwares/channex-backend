@@ -9,9 +9,10 @@ const Booking = require("../models/Booking");
 const Room = require("../models/Rooms");
 const findSlot = require("../utils/findSlot");
 const { ObjectId } = require("mongodb");
-const UserRoles = require("../config/consts");
-const { groupBy, groupByProperties } = require("../utils/utils");
+const { groupByProperties } = require("../utils/utils");
 const KSR = require("../models/KSR");
+const Addon = require("../models/Addon");
+const { paymentStatus, UserRoles } = require("../config/consts");
 
 router.get("/get-bookings/:propertyId", authenticateToken, async (req, res) => {
   if (!req.user) {
@@ -502,6 +503,70 @@ router.get(
     }
   }
 );
+
+router.post("/ksr/order", authenticateToken, async (req, res) => {
+  const { propertyId } = req.body;
+  try {
+    const userHasAccess =
+      req.user.role == UserRoles.OWNER || req.user.role == UserRoles.MANAGER;
+    if (!userHasAccess) {
+      return res.status(403).json({
+        message:
+          "Access denied. Only owners and managers can create orders in Kitchen Stock Register.",
+      });
+    }
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ message: "Access denied. User not authenticated." });
+    }
+    if (!req.body.bookingId) {
+      return res.status(400).json({ message: "Booking ID is required." });
+    }
+    if (!req.body.guestFolioId) {
+      return res.status(400).json({ message: "Guest folio Id is required." });
+    }
+    const isAddonExists = await Addon.findOne({
+      bookingId: req.body.bookingId,
+      guestFoodId: req.body.guestFoodId,
+      addonType: req.body.addonType,
+    });
+    if (isAddonExists) {
+      //update the addon
+      isAddonExists.total = req.body.total;
+      isAddonExists.cgst = req.body.cgst;
+      isAddonExists.sgst = req.body.sgst;
+      isAddonExists.grandTotal = req.body.grandTotal;
+      isAddonExists.paymentStatus = paymentStatus.NOTPAID;
+      await isAddonExists.save();
+      return res.status(200).json({
+        message: "Addon updated successfully",
+        addon: isAddonExists,
+      });
+    }
+    const responds = await Addon.create({
+      managerId: req.user._id,
+      propertyId: propertyId,
+      bookingId: req.body.bookingId,
+      guestFolioId: req.body.guestFolioId,
+      guestName: req.body.guestName,
+      roomNumber: req.body.roomNumber,
+      addonType: req.body.addonType,
+      total: req.body.total,
+      cgst: req.body.cgst,
+      sgst: req.body.sgst,
+      grandTotal: req.body.grandTotal,
+      paymentStatus: paymentStatus.NOTPAID,
+    });
+    return res.status(201).json({
+      message: "Addon created successfully",
+      addon: responds,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ message: "Failed to create order" });
+  }
+});
 
 router.get(
   "/get-room-details/:propertyId",
