@@ -569,6 +569,36 @@ router.post("/ksr/order", authenticateToken, async (req, res) => {
 });
 
 router.get(
+  "/inhouse-guests/:propertyId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userHasAccess =
+        req.user.role == UserRoles.OWNER || req.user.role == UserRoles.MANAGER;
+      if (!userHasAccess) {
+        return res.status(403).json({
+          message:
+            "Access denied. Only owners and managers can view inhouse guests.",
+        });
+      }
+      const bookings = await Booking.find({
+        propertyId: req.params.propertyId,
+        isCheckedIn: true,
+      });
+      return res.status(200).json({
+        message: "Inhouse guests fetched successfully",
+        data: bookings,
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      return res
+        .status(500)
+        .json({ message: "Failed to fetch inhouse guests" });
+    }
+  }
+);
+
+router.get(
   "/get-room-details/:propertyId",
   authenticateToken,
   async (req, res) => {
