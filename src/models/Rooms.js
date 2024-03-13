@@ -24,6 +24,9 @@ const roomSchema = new mongoose.Schema({
   pricePerDay: {
     type: Number,
   },
+  roomDeposit: {
+    type: Number,
+  },
   roomSize: {
     type: Number,
     required: true,

@@ -581,6 +581,15 @@ router.get(
             "Access denied. Only owners and managers can view inhouse guests.",
         });
       }
+      const isUserProperty = await Property.findOne({
+        _id: req.params.propertyId,
+        owner_user_id: req.user._id,
+      });
+      if (!isUserProperty) {
+        return res.status(403).json({
+          message: "Access denied. You don't have access to this property.",
+        });
+      }
       const bookings = await Booking.find({
         propertyId: req.params.propertyId,
         isCheckedIn: true,
@@ -597,6 +606,63 @@ router.get(
     }
   }
 );
+router.get(
+  "/billings/rooms/:propertyId",
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userHasAccess =
+        req.user.role == UserRoles.OWNER || req.user.role == UserRoles.MANAGER;
+      if (!userHasAccess) {
+        return res.status(403).json({
+          message:
+            "Access denied. Only owners and managers can view inhouse guests.",
+        });
+      }
+      const isUserProperty = await Property.findOne({
+        _id: req.params.propertyId,
+        owner_user_id: req.user._id,
+      });
+      if (!isUserProperty) {
+        return res.status(403).json({
+          message: "Access denied. You don't have access to this property.",
+        });
+      }
+      const rooms = await Room.find({
+        propertyId: req.params.propertyId,
+      });
+      return res.status(200).json({
+        message: "Rooms fetched successfully",
+        data: rooms,
+      });
+    } catch (error) {
+      console.error("Error:", error);
+      return res
+        .status(500)
+        .json({ message: "Failed to fetch inhouse guests" });
+    }
+  }
+);
+
+router.get("/bookings/:bookingId", authenticateToken, async (req, res) => {
+  try {
+    const userHasAccess =
+      req.user.role == UserRoles.OWNER || req.user.role == UserRoles.MANAGER;
+    if (!userHasAccess) {
+      return res.status(403).json({
+        message: "Access denied. Only owners and managers can view bookings.",
+      });
+    }
+    const booking = await Booking.findById(req.params.bookingId);
+    return res.status(200).json({
+      message: "Booking fetched successfully",
+      data: booking,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ message: "Failed to fetch booking" });
+  }
+});
 
 router.get(
   "/get-room-details/:propertyId",

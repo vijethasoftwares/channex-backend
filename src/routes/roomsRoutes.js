@@ -25,11 +25,10 @@ router.post("/create-room", authenticateToken, async (req, res) => {
       roomPricePerMonth,
       propertyType,
       maxOccupancy,
-      vacancy,
       roomDescription,
       propertyId,
-      guestDetails,
       roomPricePerDay,
+      roomDeposit,
       images,
       roomFacilities,
     } = req.body;
@@ -57,12 +56,12 @@ router.post("/create-room", authenticateToken, async (req, res) => {
       description: roomDescription,
       propertyType,
       facilities: roomFacilities,
-      guestDetails: guestDetails,
       images: images,
       propertyId: propertyId,
       maxOccupancy: maxOccupancy,
       pricePerDay: roomPricePerDay,
       pricePerMonth: roomPricePerMonth,
+      roomDeposit,
     });
     console.log(newRoom, "newRoom");
 
